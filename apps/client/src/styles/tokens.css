@@ -1,0 +1,125 @@
+/* =========================================================
+   Speak5 — Cadence design tokens
+   Ported from the approved Cadence prototype.
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Surface */
+  --bg:         #EEF1F6;
+  --sf:         #FFFFFF;
+  --sf2:        #E4E8F2;
+  --ln:         #D9DEE8;
+  --page:       #DDE2EC;
+  --sheet:      #FFFFFF;
+  --bezel:      #0B1220;
+
+  /* Text */
+  --tx:         #101828;
+  --sub:        #4F596C;
+  --faint:      #5F6A80;
+  --note-color: #4A5468;
+
+  /* Accent — ultramarine */
+  --ac:         #2F3CF0;
+  --acsoft:     #E3E7FB;
+  --onac:       #FFFFFF;
+  --deep:       #1B24B8;
+  --home1:      #D4DAFB;
+
+  /* Coral — evidence / warnings */
+  --coral:      #FF7A66;
+  --coralsoft:  #FFEDE9;
+  --coraltx:    #B8412F;
+
+  /* Semantic */
+  --good:       #137A55;
+  --goodsoft:   rgba(31, 157, 107, 0.13);
+  --warn:       #FF7A66;
+  --warnsoft:   #FFEDE9;
+  --danger:     #C92D45;
+
+  /* Typography */
+  --display:    'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --f:          'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Motion */
+  --ease:       cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg:         #0B1020;
+  --sf:         #141B33;
+  --sf2:        #1E2749;
+  --ln:         rgba(255, 255, 255, 0.12);
+  --tx:         #EEF1F8;
+  --sub:        #A9B3CA;
+  --faint:      #8C97B2;
+  --ac:         #8E9BFF;
+  --acsoft:     rgba(142, 155, 255, 0.16);
+  --onac:       #0B1020;
+  --deep:       #C8CDFB;
+  --coralsoft:  rgba(255, 122, 102, 0.15);
+  --coraltx:    #FF9C8D;
+  --good:       #5ADBA8;
+  --goodsoft:   rgba(90, 219, 168, 0.14);
+  --danger:     #FF7B8A;
+  --page:       #070B16;
+  --note-color: #A9B3CA;
+  --sheet:      #141B33;
+  --bezel:      #000;
+  --home1:      rgba(47, 60, 240, 0.38);
+  color-scheme: dark;
+}
+
+/* =========================================================
+   Keyframes
+   ========================================================= */
+
+@keyframes pgIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.99); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes blink {
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+@keyframes halo {
+  50% { box-shadow: 0 0 0 18px rgba(255,255,255,0.1), 0 0 0 36px rgba(255,255,255,0.03); }
+}
+
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes fadein {
+  to { opacity: 1; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  30%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(1.15); opacity: 0.2; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

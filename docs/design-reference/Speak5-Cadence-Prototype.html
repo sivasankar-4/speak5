@@ -1,0 +1,692 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Speak5 Cadence Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Speak5 in the Cadence look: porcelain screens, one ultramarine accent, coral for evidence, serif display + grotesk interface. */
+:root{--bg:#EEF1F6;--sf:#FFFFFF;--sf2:#E4E8F2;--ln:#D9DEE8;--tx:#101828;--sub:#4F596C;--faint:#5F6A80;--ac:#2F3CF0;--acsoft:#E3E7FB;--onac:#FFFFFF;--deep:#1B24B8;--coral:#FF7A66;--coralsoft:#FFEDE9;--coraltx:#B8412F;--good:#137A55;--goodsoft:rgba(31,157,107,.13);--warn:#FF7A66;--warnsoft:#FFEDE9;--danger:#C92D45;--page:#DDE2EC;--note:#4A5468;--sheet:#FFFFFF;--bezel:#0B1220;--home1:#D4DAFB;
+ --display:'Instrument Serif',Georgia,'Times New Roman',serif;--f:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--ease:cubic-bezier(.2,.8,.2,1);color-scheme:light}
+:root[data-theme="dark"]{--bg:#0B1020;--sf:#141B33;--sf2:#1E2749;--ln:rgba(255,255,255,.12);--tx:#EEF1F8;--sub:#A9B3CA;--faint:#8C97B2;--ac:#8E9BFF;--acsoft:rgba(142,155,255,.16);--onac:#0B1020;--deep:#C8CDFB;--coralsoft:rgba(255,122,102,.15);--coraltx:#FF9C8D;--good:#5ADBA8;--goodsoft:rgba(90,219,168,.14);--danger:#FF7B8A;--page:#070B16;--note:#A9B3CA;--sheet:#141B33;--bezel:#000;--home1:rgba(47,60,240,.38);color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--page);color:var(--tx);font:16px/1.5 var(--f);display:flex;gap:56px;align-items:center;justify-content:center;flex-wrap:wrap;padding-block:24px;padding-inline:20px;overflow-x:hidden}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--coral);outline-offset:3px}
+
+/* side panel (wide screens only) */
+.side{width:300px;max-height:800px;overflow:auto;color:var(--note);font-size:15px;line-height:1.55;scrollbar-width:thin}
+.side h1{font:400 46px/1.02 var(--display);letter-spacing:-.01em;color:var(--tx);margin:0 0 14px}
+.side p{margin:0 0 12px}
+.side h3{font-size:13px;font-weight:700;margin:18px 0 8px;color:var(--faint)}
+.jl{display:flex;flex-wrap:wrap;gap:6px}
+.jl button{border:1px solid var(--ln);background:var(--sf);border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--tx)}
+.jl button:hover{border-color:var(--ac)}
+
+/* phone */
+.phone{width:372px;height:784px;border-radius:54px;background:var(--bezel);padding:11px;box-shadow:0 50px 90px -34px rgba(16,24,40,.6),inset 0 0 0 1.5px #2A3550;flex:none;max-width:100%}
+.screen{position:relative;height:100%;border-radius:44px;overflow:hidden;background:var(--bg);color:var(--tx)}
+#stage{position:absolute;inset:0}
+.page{position:absolute;inset:0;display:flex;flex-direction:column;padding:54px 22px 0;overflow-y:auto;scrollbar-width:none;outline:none;background:var(--bg)}
+.page::-webkit-scrollbar{display:none}
+.page.home{background:radial-gradient(120% 50% at 80% -10%,var(--home1) 0%,transparent 60%),var(--bg)}
+.page.bgl{background:radial-gradient(90% 40% at 50% 0%,var(--acsoft),transparent 70%),var(--bg)}
+.page.enter{animation:pgIn .35s var(--ease)}
+.page.enterb{animation:pgIn .35s var(--ease)}
+@keyframes pgIn{from{opacity:0;transform:translateY(16px) scale(.99)}to{opacity:1;transform:none}}
+.body{flex:1}
+.page.tabs .body{padding-bottom:104px}
+.cta{padding:14px 0 24px;display:flex;flex-direction:column;gap:8px;background:var(--bg);flex:none}
+.page.has-cta{overflow:hidden}
+.page.has-cta>.body{overflow-y:auto;min-height:0;scrollbar-width:none;padding-bottom:20px;margin:0 -22px;padding-left:22px;padding-right:22px;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 14px),transparent)}
+.page.has-cta>.cta{border-top:1px solid var(--ln,rgba(16,24,40,.08))}
+
+/* header bits */
+.hdr{display:flex;align-items:center;justify-content:space-between;min-height:44px;margin-bottom:14px}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:15px;color:var(--sub);min-height:44px}
+.top .rt{display:flex;align-items:center;gap:8px}
+.sp{width:44px;height:44px}
+.ib{width:44px;height:44px;border-radius:50%;border:1px solid var(--ln);background:var(--sf);display:grid;place-items:center;color:var(--tx)}
+.dots{display:flex;gap:6px}
+.dots i{width:22px;height:5px;border-radius:5px;background:var(--sf2)}
+.dots i.on{background:var(--ac)}
+.pill{display:flex;align-items:center;gap:6px;background:var(--sf);border:1px solid var(--ln);border-radius:99px;padding:7px 13px;font-size:14px;font-weight:600;color:var(--tx)}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--coral)}
+
+/* type */
+h1{font:400 40px/1.04 var(--display);letter-spacing:-.01em;margin:0;text-wrap:balance}
+h1 em{font-style:italic;color:var(--ac)}
+h2{font:700 17px/1.3 var(--f);margin:26px 0 12px}
+h3{font:700 16px/1.3 var(--f);margin:0}
+.sub{color:var(--sub);margin:12px 0 0;font-size:16px;line-height:1.5}
+.eyebrow{margin:0 0 8px;font-size:14px;font-weight:600;color:var(--ac)}
+.note{font-size:14px;color:var(--sub);margin:10px 0 0;line-height:1.5}
+.hint{margin:0;text-align:center;font-size:14px;color:var(--sub)}
+.sec{display:flex;justify-content:space-between;align-items:center;margin:26px 0 12px;font-weight:700;font-size:17px}
+.sec small{font-weight:500;font-size:14px;color:var(--sub)}
+.lk{background:none;border:0;color:var(--ac);font:600 14px var(--f);padding:6px 0;min-height:32px}
+
+/* options */
+.stack{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;text-align:left;padding:17px 18px;border-radius:22px;border:1.5px solid var(--ln);background:var(--sf);transition:border-color .15s,background .15s,transform .15s var(--ease)}
+.opt:active{transform:scale(.985)}
+.opt[aria-pressed="true"]{border-color:var(--ac);background:var(--acsoft)}
+.ot{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ot b{font-size:16px;font-weight:700}
+.ot small{font-size:14px;color:var(--sub);line-height:1.4}
+.ck{flex:none;width:24px;height:24px;border-radius:8px;border:1.5px solid var(--faint);display:grid;place-items:center}
+.opt[data-k="r"] .ck{border-radius:50%}
+.opt[aria-pressed="true"] .ck{background:var(--ac);border-color:var(--ac);color:var(--onac)}
+.big{font:400 42px/1 var(--display);width:54px;flex:none}
+.optrow{display:flex;align-items:center;gap:14px;min-width:0}
+
+/* buttons */
+.btn{height:58px;border-radius:20px;border:0;font:700 17px/1 var(--f);width:100%;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s var(--ease),opacity .15s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:#2F3CF0;color:#fff;box-shadow:0 14px 28px -12px rgba(47,60,240,.7)}
+.btn.ink{background:var(--tx);color:var(--bg)}
+.btn.ghost{background:transparent;color:var(--tx);box-shadow:inset 0 0 0 1.5px var(--ln)}
+.btn.txt{background:none;color:var(--ac);height:44px}
+.btn.white{background:#fff;color:#2F3CF0}
+.btn.ghostw{background:transparent;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.5)}
+.btn.danger{background:transparent;color:var(--danger);box-shadow:inset 0 0 0 1.5px var(--danger)}
+.btn[disabled]{opacity:.4;cursor:not-allowed;box-shadow:none}
+
+/* cards, chips */
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:26px;padding:18px}
+.card p{margin:6px 0 0;color:var(--sub);font-size:15px;line-height:1.55}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;font-size:13px;font-weight:600;background:var(--sf2);color:var(--sub);white-space:nowrap}
+.chip.ac{background:var(--acsoft);color:var(--ac)}
+.chip.good{background:var(--goodsoft);color:var(--good)}
+.chip.warn{background:var(--coralsoft);color:var(--coraltx)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.between{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.proto{font-size:12px;font-weight:600;color:var(--faint);display:inline-flex;gap:6px;align-items:center}
+
+/* hero (the Cadence signature card) */
+.hero{position:relative;margin-top:20px;border-radius:30px;padding:22px;color:#fff;overflow:hidden;background:linear-gradient(150deg,#3A47FF 0%,#2F3CF0 45%,#1B24B8 100%);box-shadow:0 26px 40px -22px rgba(47,60,240,.75)}
+.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 80% at 100% 0%,rgba(255,255,255,.22),transparent 60%);pointer-events:none}
+.hero>*{position:relative;z-index:1}
+.hero .between{flex-wrap:wrap;gap:8px}
+.hero .tg{font-size:14px;font-weight:600;color:#C8CDFB}
+.hero .hp{font:400 26px/1.1 var(--display);margin:10px 0 0;letter-spacing:-.005em}
+.hero .hm{margin:0 0 12px;font-size:14px;color:#C8CDFB}
+.hero .chip{background:rgba(255,255,255,.16);color:#fff}
+.hero svg.th{display:block;width:100%;height:44px;margin:10px 0 8px}
+.why{font-size:14px;color:var(--sub);margin:12px 2px 0;line-height:1.5}
+.why b{color:var(--tx)}
+.week{display:flex;gap:7px}
+.week i{flex:1;height:46px;border-radius:15px;background:var(--sf2);display:grid;place-items:center;font:600 13px var(--f);color:var(--sub);font-style:normal}
+.week i.d{background:var(--tx);color:var(--bg)}
+.week i.t{background:var(--sf);box-shadow:inset 0 0 0 2px var(--ac);color:var(--ac)}
+
+/* floating tab pill */
+.tabbar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:rgba(16,24,40,.94);backdrop-filter:blur(14px);border-radius:99px;padding:8px;box-shadow:0 20px 36px -14px rgba(16,24,40,.75);z-index:20}
+.tb{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;font:600 12px var(--f);color:#98A2B8;padding:8px 20px;border-radius:99px}
+.tb[aria-current="page"]{color:#fff;background:rgba(255,255,255,.09)}
+.tb.mic{width:60px;height:60px;border-radius:50%;background:#2F3CF0;color:#fff;padding:0;justify-content:center;margin:-20px 6px;box-shadow:0 0 0 6px var(--bg),0 12px 24px -8px rgba(47,60,240,.8)}
+.tb.mic[aria-current="page"]{background:#2F3CF0;box-shadow:0 0 0 6px var(--bg),0 0 0 9px rgba(47,60,240,.35),0 12px 24px -8px rgba(47,60,240,.8)}
+
+.screen:has(.tabbar:not([hidden]))::after{content:"";position:absolute;left:0;right:0;bottom:0;height:118px;background:linear-gradient(to bottom,transparent,var(--bg) 72%);pointer-events:none;z-index:15}
+
+/* sheets, dialogs, toast */
+.layer{position:absolute;inset:0;visibility:hidden;z-index:40}
+.layer.open{visibility:visible}
+.scrim{position:absolute;inset:0;background:rgba(16,24,40,.55);opacity:0;transition:opacity .25s}
+.layer.open .scrim{opacity:1}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sheet);border-radius:30px 30px 0 0;padding:22px 20px 24px;transform:translateY(100%);transition:transform .3s var(--ease);display:flex;flex-direction:column;gap:10px;max-height:86%;overflow:auto;border-top:1px solid var(--ln)}
+.layer.open .sheet{transform:none}
+.sheet h2{margin:0;font:400 30px/1.05 var(--display)}
+.sheet p{margin:0;color:var(--sub);font-size:15px}
+.dlgbox{position:absolute;left:24px;right:24px;top:50%;transform:translateY(-50%) scale(.96);background:#fff;color:#1b1f2a;border-radius:28px;padding:24px 20px 12px;text-align:center;opacity:0;transition:opacity .2s,transform .2s var(--ease);box-shadow:0 30px 60px -20px rgba(0,0,0,.6)}
+.layer.open .dlgbox{opacity:1;transform:translateY(-50%)}
+.dlgbox .di{width:36px;height:36px;margin:0 auto 12px;color:#3a4a6b}
+.dlgbox p{margin:0 0 14px;font-size:17px;line-height:1.35;font-weight:500}
+.dlgbox button{display:block;width:100%;border:0;background:none;color:#2B4BD8;font-weight:700;font-size:15px;padding:13px;border-radius:99px}
+.dlgbox button:hover{background:rgba(43,75,216,.08)}
+.dlgbox small{display:block;color:#6a738a;font-size:12px;margin:2px 0 8px}
+.toast{position:absolute;left:50%;bottom:104px;transform:translate(-50%,20px);background:var(--tx);color:var(--bg);padding:11px 18px;border-radius:14px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s,transform .25s var(--ease);z-index:60;pointer-events:none;max-width:86%;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* metrics, quotes, lists */
+.mt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.m{background:var(--sf);border:1px solid var(--ln);border-radius:22px;padding:13px 12px}
+.m b{display:block;font:400 32px/1 var(--display);font-variant-numeric:tabular-nums}
+.m span{display:block;font-size:13px;color:var(--sub);margin-top:5px;line-height:1.3}
+.quote{margin:12px 0 0;padding:14px 16px;border-radius:18px;background:var(--coralsoft);border-left:3px solid var(--coral);font-size:16px;line-height:1.6}
+.quote small{display:block;font-size:13px;color:var(--sub);margin-bottom:6px}
+.j{border-bottom:2px dotted var(--coral);font-weight:600}
+.f{background:var(--acsoft);border-radius:5px;padding:0 4px;color:var(--sub)}
+.p{display:inline-block;font-size:12px;font-weight:600;background:var(--acsoft);color:var(--ac);border-radius:99px;padding:0 8px;margin:0 3px}
+.trans{font-size:15px;line-height:1.75;color:var(--tx)}
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 2px;border-bottom:1px solid var(--ln);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--tx)}
+.li:last-child{border-bottom:0}
+.li .t{display:flex;flex-direction:column;min-width:0}
+.li .t b{font-size:16px;font-weight:600}
+.li .t small{font-size:14px;color:var(--sub)}
+.li .r{color:var(--faint);flex:none;display:flex;align-items:center;gap:6px;font-size:14px}
+.stat{display:flex;gap:8px}
+.stat .m{flex:1}
+.dl{display:flex;flex-direction:column;gap:9px;margin-top:10px}
+.dl .d{display:flex;align-items:flex-start;gap:12px;font-size:15px;color:var(--sub);line-height:1.5}
+.dl .d b{color:var(--tx);font-weight:600}
+.dl .dot{flex:none;width:30px;height:30px;border-radius:10px;background:var(--acsoft);color:var(--ac);display:grid;place-items:center}
+.bar{height:8px;border-radius:8px;background:var(--sf2);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--ac);border-radius:8px}
+.seg{display:flex;background:var(--sf2);border-radius:16px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:none;border-radius:12px;padding:10px 6px;font-size:14px;font-weight:600;color:var(--sub)}
+.seg button[aria-pressed="true"]{background:var(--sf);color:var(--tx);box-shadow:0 2px 8px -3px rgba(16,24,40,.35)}
+.spark{display:block;width:100%;height:auto;margin-top:12px;overflow:visible}
+.ax{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);padding:6px 4px 0}
+
+/* splash */
+.splash{align-items:center;justify-content:center;gap:12px;padding-top:0}
+.wm{font:400 58px/1 var(--display);letter-spacing:-.01em}
+.tag{color:var(--sub);margin:0}
+.logo{animation:rise .8s var(--ease)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* recording: the whole screen turns ultramarine and the voice is drawn as a line */
+.page.rec{background:radial-gradient(90% 55% at 50% 38%,#4452FF 0%,#2F3CF0 55%,#1B24B8 100%);color:#fff;padding-bottom:26px;overflow:hidden}
+.rec .top{color:#C8CDFB;min-height:28px}
+.rec .ind{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:#fff}
+.rec .ind i{width:10px;height:10px;border-radius:50%;background:var(--coral);box-shadow:0 0 0 4px rgba(255,122,102,.3);animation:blink 1.4s ease-in-out infinite}
+@keyframes blink{50%{opacity:.4;transform:scale(.8)}}
+.rec .tm{font:600 16px var(--f);font-variant-numeric:tabular-nums;color:#fff}
+.rec .tm span{color:#C8CDFB;font-weight:500}
+.rec .bar3{height:3px;border-radius:3px;background:rgba(255,255,255,.22);margin-top:12px;overflow:hidden}
+.rec .bar3 i{display:block;height:100%;width:0;background:#fff}
+.rec .pr{font:400 32px/1.08 var(--display);letter-spacing:-.005em;margin:20px 0 0;text-wrap:balance}
+.thread{width:100%;display:block;overflow:visible;margin:auto 0}
+.cam{border-radius:26px;height:170px;margin-top:16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);position:relative;overflow:hidden;flex:none}
+.cam svg{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);width:62%;color:#fff;opacity:.35}
+.cam span{position:absolute;left:14px;top:12px;font-size:12px;font-weight:600;color:#DDE1FF}
+.rbtns{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none}
+.stop{width:84px;height:84px;border-radius:50%;border:0;background:#fff;display:grid;place-items:center;margin:14px 0 30px;box-shadow:0 0 0 12px rgba(255,255,255,.16),0 0 0 26px rgba(255,255,255,.07);animation:halo 1.8s ease-in-out infinite}
+.stop i{width:26px;height:26px;border-radius:8px;background:#2F3CF0;display:block}
+@keyframes halo{50%{box-shadow:0 0 0 18px rgba(255,255,255,.1),0 0 0 36px rgba(255,255,255,.03)}}
+.rec .fl{color:#fff;font-weight:700;font-size:15px}
+.rec .dis{background:none;border:0;color:#E4E7FF;font-weight:600;font-size:15px;height:44px;padding:0 24px;border-radius:99px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.4)}
+.rec .dis:focus-visible,.stop:focus-visible{outline-color:#fff}
+.rec .dnote{text-align:center;color:#C8CDFB;font-size:12px;margin-top:4px}
+.cd{position:absolute;inset:0;display:grid;place-items:center;align-content:center;background:#2F3CF0;color:#fff;z-index:5;font:400 150px/1 var(--display)}
+.cd span{animation:pop .9s var(--ease)}
+@keyframes pop{0%{transform:scale(.6);opacity:0}30%{transform:scale(1);opacity:1}100%{transform:scale(1.15);opacity:.2}}
+.cd small{position:absolute;bottom:130px;font:500 16px var(--f);color:#C8CDFB}
+
+/* the answer as a line (built from the transcript) */
+.tcard{background:var(--sf);border:1px solid var(--ln);border-radius:26px;padding:14px 14px 12px;margin-top:14px}
+.tcard .cap{font-size:14px;color:var(--sub)}
+.tarea{position:relative;margin-top:34px}
+.tcard.mini .tarea{margin-top:10px}
+.tarea svg{display:block;width:100%;height:auto;overflow:visible}
+.tarea .main{stroke:var(--ac);stroke-dasharray:1;stroke-dashoffset:1;animation:draw .9s var(--ease) .1s forwards}
+.tarea .exp{opacity:0;animation:fadein .4s var(--ease) .85s forwards}
+.rg{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--sf);border:2.5px solid var(--tx);transform:translate(-50%,-50%);opacity:0;animation:fadein .4s var(--ease) 1s forwards}
+.tmk{position:absolute;top:-30px;transform:translateX(-50%);font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap;opacity:0;animation:fadein .4s var(--ease) 1s forwards}
+.tmk::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--coral);box-shadow:0 0 0 4px rgba(255,122,102,.25)}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fadein{to{opacity:1}}
+.pth{display:block;width:100%;height:70px;margin-top:20px}
+.pth path{stroke:var(--ac)}
+
+/* prep ring, steps, processing */
+.ring{width:190px;height:190px;border-radius:50%;margin:20px auto 0;display:grid;place-items:center;position:relative}
+.ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.ring b{font:400 60px/1 var(--display);font-variant-numeric:tabular-nums}
+.of{text-align:center;font-size:14px;color:var(--sub)}
+.steps{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+.step{display:flex;gap:14px;background:var(--sf);border:1px solid var(--ln);border-radius:22px;padding:14px 16px}
+.step .n{flex:none;width:30px;height:30px;border-radius:10px;background:var(--acsoft);color:var(--ac);font-weight:800;display:grid;place-items:center;font-size:14px}
+.step b{display:block;font-size:16px}
+.step span{font-size:14px;color:var(--sub);line-height:1.45}
+.stg{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.sg{display:flex;align-items:center;gap:14px;padding:13px 4px;color:var(--faint);font-size:16px;font-weight:600;transition:color .3s}
+.sg .si{flex:none;width:28px;height:28px;border-radius:50%;border:2px solid var(--ln);display:grid;place-items:center;color:#fff}
+.sg.on{color:var(--tx)}
+.sg.on .si{border-color:var(--ac);border-top-color:transparent;animation:spin 1s linear infinite}
+.sg.done{color:var(--sub)}
+.sg.done .si{background:var(--good);border-color:var(--good)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.center{display:grid;place-items:center;width:84px;height:84px;border-radius:28px;background:var(--acsoft);color:var(--ac);margin:30px 0 20px}
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.ba .card{padding:14px}
+.ba small{font-size:13px;font-weight:700;color:var(--faint)}
+.ba p{font-size:15px;color:var(--tx);margin:6px 0 0;line-height:1.5}
+.dl2{display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;font-size:15px}
+.dl2 s{color:var(--faint)}
+.dl2 b{font-weight:700}
+.tbl{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
+.tbl td,.tbl th{padding:10px 4px;border-bottom:1px solid var(--ln);text-align:right}
+.tbl th{font-size:13px;color:var(--faint);font-weight:600}
+.tbl td:first-child,.tbl th:first-child{text-align:left;color:var(--sub)}
+.tbl tr:last-child td{border-bottom:0}
+.play{display:flex;align-items:center;gap:12px;background:var(--sf2);border-radius:16px;padding:10px 14px;margin-top:8px}
+.play button{width:36px;height:36px;border-radius:50%;border:0;background:var(--ac);color:var(--onac);display:grid;place-items:center;flex:none}
+.input{width:100%;height:54px;border-radius:16px;border:1.5px solid var(--ln);background:var(--sf);padding:0 16px;color:var(--tx)}
+.input:focus{border-color:var(--ac);outline:none}
+.err{color:var(--danger);font-size:14px;margin:6px 0 0}
+.lbl{display:block;font-size:14px;font-weight:600;color:var(--sub);margin:14px 0 6px}
+.tgl{width:52px;height:30px;border-radius:30px;border:0;background:var(--sf2);position:relative;flex:none}
+.tgl::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--faint);transition:transform .2s var(--ease),background .2s}
+.tgl[aria-pressed="true"]{background:var(--acsoft)}
+.tgl[aria-pressed="true"]::after{transform:translateX(22px);background:var(--ac)}
+
+@media (max-width:980px){.side{display:none}}
+@media (max-width:480px){
+ body{padding:0;display:block;overflow:hidden}
+ .phone{width:100%;height:100%;border-radius:0;padding:0;box-shadow:none}
+ .screen{border-radius:0}
+ .page{padding-top:max(24px,env(safe-area-inset-top,0px))}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.tarea .main{stroke-dashoffset:0}.tarea .exp,.rg,.tmk{opacity:1}}
+
+</style>
+
+<aside class="side" id="side">
+  <h1>Speak5, V1 demo</h1>
+  <p>The full Speak5 learning loop in the Cadence look: porcelain screens, an ultramarine recording screen, and your voice drawn as a line. Every flow and rule from the spec is unchanged.</p>
+  <p>Start on the phone from the beginning, or jump to any screen below. Recording and analysis are simulated, and no camera or microphone is used.</p>
+  <div id="jumps"></div>
+  <p style="margin-top:16px"><button class="jl-reset" id="restart" style="border:1px solid var(--ln);background:var(--sf);border-radius:99px;padding:8px 14px;font-weight:600;color:var(--tx)">Restart demo</button></p>
+</aside>
+
+<main class="phone">
+  <div class="screen" id="screen">
+    <div id="stage"></div>
+    <nav class="tabbar" id="tabbar" aria-label="Main" hidden>
+      <button class="tb" data-act="tab" data-to="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+      <button class="tb mic" data-act="tab" data-to="practice" aria-label="Practice"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button class="tb" data-act="tab" data-to="progress"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Progress</button>
+    </nav>
+    <div class="layer" id="sheet"></div>
+    <div class="layer" id="dlg"></div>
+    <div class="toast" id="toast" role="status"></div>
+  </div>
+</main>
+
+<script>
+(function(){
+'use strict';
+var D=8; /* demo clock: recording and prep timers run 8x faster */
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- icons ---------- */
+var IC={
+ back:'<path d="M15 5l-7 7 7 7"/>',chev:'<path d="M9 5l7 7-7 7"/>',check:'<path d="M5 12l5 5 9-10"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+ video:'<rect x="3" y="6" width="13" height="12" rx="3"/><path d="M16 10l5-3v10l-5-3z"/>',play:'<path d="M8 5l11 7-11 7z" fill="currentColor"/>',pause:'<path d="M8 5v14M16 5v14"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',bell:'<path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+ cloud:'<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9z"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+ shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',spark:'<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',
+ book:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/>',eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+ list:'<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'
+};
+function ic(n,s){s=s||22;return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+IC[n]+'</svg>'}
+function logo(h){var hs=[.3,.45,.62,.8,1],w=h/9;return '<svg width="'+(h*1.1)+'" height="'+h+'" viewBox="0 0 55 50" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#2F3CF0"/><stop offset="1" stop-color="#8E9BFF"/></linearGradient></defs>'+hs.map(function(v,i){var bh=50*v;return '<rect x="'+(i*11+1)+'" y="'+(50-bh)+'" width="8" height="'+bh+'" rx="4" fill="url(#lg)"/>'}).join('')+'</svg>'}
+
+/* ---------- sample content ---------- */
+var TB='Hello, so, <f>um</f>, I am a third-year B.Tech student, and <f>basically</f> I am interested in backend development. <h>I have done a few projects, and I like solving problems.</h> [[pause:2.8]] <f>Um</f>, in my free time I practice coding questions, and I like to learn new technologies. I have worked with Java, and I know some Python, and I have used databases in my projects. [[pause:2.4]] My goal is to become a good software engineer, so I am looking for an internship where I can learn from experienced people and contribute to real work. <f>Basically</f>, I am a hard-working person and a quick learner, and I can work well in a team. [[pause:2.2]] I think I can do well if I get a chance, and I will give my best. <f>Um</f>, that is all about me. Thank you.';
+var T1='<h>So, <f>um</f>, <j>REST API</j> is <f>basically</f> an <j>architectural style</j> for designing web services. In this, the client and the server communicate over <j>HTTP</j> using methods like <j>GET, POST, PUT and DELETE</j>.</h> [[pause:2.6]] REST is stateless, which means every request from the client must carry all the information that the server needs, because the server does not store any session between two requests. The data is usually exchanged in JSON format, and every resource is identified by a URL, for example slash users slash one two three. [[pause:2.2]] <f>Basically</f>, the server exposes endpoints, and the client calls these endpoints to read or change the resources. <f>Um</f>, the main advantage is that it is simple and scalable, because the servers are stateless, so we can add more servers easily. It is also language independent, so a mobile app or a website can use it. And, <f>um</f>, there are status codes like two hundred for success and four hundred and four for not found. [[pause:3.1]] So that is <f>basically</f> how REST API works, and it is used everywhere in industry, like in microservices and mobile applications.';
+var T2='<h>Imagine you are in a restaurant. You do not walk into the kitchen. You tell the waiter what you want, the waiter carries your request to the kitchen, and brings your food back. An API works the same way: it is the waiter between an app and a server.</h> [[pause:1.4]] REST is simply the agreed way of placing that order, so everyone speaks the same language. Here is how it works. The app sends a request to an address, called a URL, along with an action: GET to fetch something, POST to add something, DELETE to remove something. The server replies with the data, usually in a simple text format called JSON, and a code that says how it went. For example, when you open a weather app, it quietly asks a server, <f>um</f>, give me today’s weather for my city. The server sends back the temperature and the forecast, and the app shows it on your screen. Another example: when you place an order on a food delivery app, the app sends a request and the server saves your order. [[pause:2.1]] One idea keeps this reliable: the server does not remember you between requests, so every request carries everything it needs, like giving your table number each time you call the waiter. That is why one server can handle thousands of people at once. So REST is a simple, common way for apps to talk to servers, and the next time your app loads something, it is <f>basically</f> a waiter fetching it.';
+var DB=70,D1=94,D2=120;
+
+function plain(t){return t.replace(/\[\[pause:[\d.]+\]\]/g,' ').replace(/<[^>]+>/g,'')}
+function wc(t){return plain(t).trim().split(/\s+/).filter(Boolean).length}
+function fc(t){return (t.match(/<f>/g)||[]).length}
+function pc(t){return (t.match(/\[\[pause:[\d.]+\]\]/g)||[]).filter(function(x){return parseFloat(x.slice(8))>=2}).length}
+function exc(t){var m=t.match(/<h>([\s\S]*?)<\/h>/);return m?m[1]:''}
+function re(t){return t.replace(/<f>/g,'<span class="f">').replace(/<\/f>/g,'</span>').replace(/<j>/g,'<span class="j">').replace(/<\/j>/g,'</span>').replace(/\[\[pause:([\d.]+)\]\]/g,function(m,s){return '<span class="p">'+s+' s pause</span>'})}
+function rt(t){return re(t.replace(/<\/?[hj]>/g,''))}
+function first(t){var m=plain(t).trim().match(/^[^.!?]*[.!?]/);return m?m[0]:''}
+function fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)}
+function wpm(s){return Math.round(s.words/(s.dur/60))}
+function rate(s){return (s.fillers/s.words*100).toFixed(1)}
+function stats(o){o.words=wc(o.t);o.fillers=fc(o.t);o.pauses=pc(o.t);return o}
+
+var TB1='So, <f>um</f>, in my second year we built a college event app as a team project. I was handling the backend, and <f>basically</f> the login was failing for some users and not for others. [[pause:2.4]] I checked the logs, and I tried changing a few things in the code, and I asked a friend, and <f>um</f>, we also searched online for a long time. It was taking a lot of time and it was <f>basically</f> very stressful. [[pause:2.1]] Then after some days I found that the problem was in how I was saving the session, and I changed it. <h>After that it was working fine, and <f>um</f>, I <j>learned a lot</j> from this project.</h> [[pause:2.7]] Thank you.';
+var TB2='In my second year, our college event app had a bug two days before the demo: login failed for about one in five users. I owned the backend, so it was mine to fix. [[pause:1.6]] I stopped changing code and started reading the logs. Every failure was a user on mobile data, and that pointed me to how I was saving sessions. I had tied them to an IP address, and mobile IPs keep changing. I moved the session to a token stored on the device and wrote a test for that case. [[pause:2.2]] <h>The result: login worked for everyone in testing, we demoed on time, and the team kept my test in the project.</h> <f>Um</f>, what I took from it is to read the evidence before touching the code.';
+var TG1='So, <f>um</f>, I think remote internships are <f>basically</f> as valuable as in-office ones. [[pause:1.8]] <h>The main reason is that learning depends on the person, so if the intern is serious then the place does not matter, and the skills will come anyway.</h> [[pause:2.5]] <f>Um</f>, also remote internships save time and money, because there is no travel, and the student can work from home. And <f>basically</f>, many companies are now working remotely only, so it is the future. [[pause:2.2]] So in my opinion both are the same, and the intern should choose what is comfortable. <f>Um</f>, that is my point.';
+var TG2='I think remote internships are as valuable as in-office ones, if they are set up well. [[pause:1.5]] My reason is that most of what an intern learns comes from doing real tasks and getting feedback, and both can happen online. For example, a friend of mine interned remotely at a startup, shipped a small feature in her second week, and got code review comments within a day. <h>She learned more from those reviews than from sitting next to someone who was too busy to look at her code.</h> [[pause:2.3]] Saving time and money is a bonus, but it is not the main point. <f>Um</f>, so my claim stands: the value is in the tasks and the feedback, not in the building.';
+var TS1='So, <f>um</f>, today I want to talk about, <f>basically</f>, something I learned the hard way, which is about time management. [[pause:2.2]] <h>I think time management is very important for students, and I did not have it in my first year, so I faced some problems.</h> <f>Um</f>, there were exams, and assignments, and also a lab record, and I kept postponing everything. [[pause:2.6]] Then one week everything came together, and I had three submissions in two days. I stayed awake the whole night and I still missed one. [[pause:2.0]] <f>Basically</f>, after that I started planning my week on Sunday, and it helped a lot. So the lesson is that we should manage our time.';
+var TS2='<h>It was two in the morning, and I was still writing a lab record that was due at nine.</h> I had two more submissions that week and no plan for any of them. [[pause:1.8]] In my first year I kept postponing everything because the deadlines felt far away, until they all arrived together. That week I stayed awake the whole night and still missed one submission. [[pause:2.4]] After that I started planning my week every Sunday, writing three things that must be done and when. <f>Um</f>, since then I have not missed a deadline. The lesson I keep is to make the deadline feel close on the day I start.';
+var CH={
+ tech:{goal:'tech',cat:'Technical explanation',title:'Explain how a REST API works',prompt:'Explain how a REST API works to a first-year student who has never written code.',fw:'tech',
+  short:'Your baseline named projects without one example.',signal:'Your baseline mentioned projects without one concrete example. This challenge trains explaining with one.',
+  trains:'Explaining for an audience that knows less than you',tags:['Audience: first-year student','Method: Concept, How it works, Example, Trade-off'],
+  a1:{t:T1,wpm:115,theme:'Explain terms before using them'},a2:{t:T2,wpm:126,theme:'Name a trade-off'},
+  fb:{head:'Clear facts. Now make them easy to <em>picture</em>.',well:'You answered the question in your first sentence, and you covered the key pieces: HTTP methods, statelessness, JSON and status codes.',pri:'Start with plain words before technical terms',priBody:'Your first two sentences use {n} terms a first-year student would not know, before giving any picture of what an API does.',
+   rows:[['Relevance','On topic','good'],['Structure','Concept and mechanism, no example','warn'],['Reasoning','Statelessness explained clearly','good'],['Examples','One URL, no everyday example','warn'],['Clarity for this audience','Jargon comes first','warn']],note:'Coaching covers how you explain, not whether every technical detail is correct.'},
+  co:{head:'Plain words <em>first</em>',why:'A first-year student listens for a picture before vocabulary. Four unfamiliar terms in two sentences asks them to keep up with words, and they stop following your idea.',steps:[['Say it with something familiar','A place, an object or a daily routine.'],['Then attach the technical name','The term now has something to hold on to.'],['Show it once with an example','One real situation they have seen.']],after:'An API is a waiter between an app and a server: the app places an order and the server brings the data back.'},
+  cue:['Picture first, using something familiar','Then name the technical term','Add one everyday example'],
+  cmp:{head:'The <em>picture</em> now comes first',label:'How you opened',rows:[['Plain-language idea first','First technical term moved from sentence 1 to sentence 4.','good'],['Everyday examples','From a URL pattern only to a weather app and a food delivery app.','good'],['Trade-off','Strengths appear in both. Neither attempt names a limit.','warn']],prog:'The plain-language idea now comes first.',next:'name one limit of what you are explaining. It was missing in both attempts.'}},
+ beh:{goal:'interview',cat:'Interview answer',title:'Tell me about a time you had to debug a hard problem',prompt:'Tell me about a time you had to debug a hard problem.',fw:'beh',
+  short:'Your baseline had no story behind your interests.',signal:'Your baseline listed interests without one story behind them. A real story with a clear result is what interviewers remember.',
+  trains:'Telling one real story with a clear ending',tags:['Audience: interviewer','Method: Situation, Action, Result'],
+  a1:{t:TB1,wpm:108,theme:'End with the result'},a2:{t:TB2,wpm:124,theme:'Say what made it hard'},
+  fb:{head:'A real story. Now end it with the <em>result</em>.',well:'You picked a real situation and you owned the backend, which is what an interviewer wants to hear. You also said what you tried.',pri:'Finish with what changed',priBody:'Your answer ends on “learned a lot”, but the result of your fix is never stated. An interviewer is left to guess whether it worked.',
+   rows:[['Relevance','On topic','good'],['Structure','Situation and action, no clear result','warn'],['Reasoning','Cause found, but not why it was hard','warn'],['Examples','One real project, with detail','good'],['Clarity for this audience','Easy to follow, vague ending','warn']],note:'Coaching covers how you tell the story, not whether every detail is accurate.'},
+  co:{head:'Close with the <em>result</em>',why:'Interviewers remember how a story ends. If the ending is only “it worked out”, they cannot tell how big your part was.',steps:[['Say what changed','One sentence: what was broken, and what is true now.'],['Add one detail that proves it','A number, a date or a reaction from the team.'],['Stop there','End on the result and skip “that is all”.']],after:'After my fix, login worked for every user in testing, we demoed on time, and the team kept my test.'},
+  cue:['Say the result in one sentence','Add one detail that proves it','End there, without “that is all”'],
+  cmp:{head:'The ending now says what <em>changed</em>',label:'How you ended',rows:[['Result stated','Attempt 1 ends on “learned a lot”. Attempt 2 says login worked for everyone and the demo was on time.','good'],['One action, not a list','From “tried a few things” to one clear decision: read the logs, then fix the session.','good'],['Why it was hard','Neither attempt says what made the bug hard to find.','warn']],prog:'The result now comes in the last sentence.',next:'say what made the problem hard to find. It was missing in both attempts.'}},
+ gd:{goal:'gd',cat:'Group discussion',title:'Remote internships as valuable as in-office ones',prompt:'“Remote internships are as valuable as in-office ones.” Take a side and defend it.',fw:'gd',
+  short:'Your baseline made points without one example.',signal:'Your baseline made points without one concrete example behind them. This challenge trains backing a side with one.',
+  trains:'Defending a side with a reason and an example',tags:['Audience: a group','Method: Claim, Reason, Example, Counterpoint'],
+  a1:{t:TG1,wpm:118,theme:'Back a reason with an example'},a2:{t:TG2,wpm:130,theme:'Answer the counterpoint'},
+  fb:{head:'A clear side. Now <em>show</em> it with one example.',well:'You took a side in your first sentence and gave more than one reason. That makes your position easy to follow.',pri:'Back your reason with one real example',priBody:'Your main reason is that learning depends on the person, but there is no situation to picture. “The skills will come anyway” is a claim, not evidence.',
+   rows:[['Relevance','Takes a side','good'],['Structure','Claim and reasons, no example, no counterpoint','warn'],['Reasoning','Reasons stated, not shown','warn'],['Examples','None given','warn'],['Clarity for this audience','Easy to follow','good']],note:'Coaching covers how you build the argument, not which side you chose.'},
+  co:{head:'One reason, one <em>example</em>',why:'In a group discussion people remember the example, not the reason. An example also lets others check your point, which is harder to wave away.',steps:[['State the reason in one line','Short enough to say in one breath.'],['Say “for example” and name a real case','A person, a place or something you have seen.'],['Link it back to your claim','End the point where it started.']],after:'My reason is that interns learn from real tasks and feedback. For example, a friend shipped a small feature in her second week and got code review within a day.'},
+  cue:['Give your reason in one line','Say “for example” and name a real case','Link it back to your claim'],
+  cmp:{head:'The reason now has an <em>example</em>',label:'How you backed your reason',rows:[['Reason backed by an example','Attempt 1 states the reason. Attempt 2 adds a real case with a timeline.','good'],['Claim stays first','Both attempts open with your side.','good'],['Counterpoint','Neither attempt answers the best objection, such as less mentoring.','warn']],prog:'The reason is now backed by a real example.',next:'answer the best objection to your side. It was missing in both attempts.'}},
+ gen:{goal:'general',cat:'Storytelling',title:'Tell a story you learned the hard way',prompt:'Tell a short story about something you learned the hard way.',fw:'gen',
+  short:'Your baseline stayed general, with no one moment.',signal:'Your baseline stayed general. This challenge trains starting with one specific moment.',
+  trains:'Opening with a moment people can picture',tags:['Audience: a classroom','Method: Moment, What happened, Takeaway'],
+  a1:{t:TS1,wpm:108,theme:'Start with the moment'},a2:{t:TS2,wpm:122,theme:'Tell the listener what to do'},
+  fb:{head:'A real story. Now <em>start</em> inside it.',well:'You chose a real experience and told it in order, including what it cost you. Your closing lesson is clear.',pri:'Start with the moment, not the topic',priBody:'Your first sentences announce a topic, “time management”, before the story starts. Listeners wait several sentences to find out what happened to you.',
+   rows:[['Relevance','On topic','good'],['Structure','Topic first, story later','warn'],['Reasoning','Lesson follows from the story','good'],['Examples','One real week','good'],['Clarity for this audience','Generic opening','warn']],note:'Coaching covers how you structure and open the story, not what you chose to share.'},
+  co:{head:'Start with the <em>moment</em>',why:'People listen when they are inside a scene. A topic sentence asks them to wait before anything happens.',steps:[['Drop them into the scene','A time, a place, one detail.'],['Tell what happened, in order','Two or three events, no more.'],['End on one takeaway','One sentence they can repeat.']],after:'It was two in the morning, and I was still writing a lab record that was due at nine.'},
+  cue:['Open with a time and a place','Tell two or three events in order','End on one takeaway'],
+  cmp:{head:'The story now starts in the <em>moment</em>',label:'How you opened',rows:[['Starts inside the scene','Attempt 1 opens with the topic. Attempt 2 opens at two in the morning with a lab record due.','good'],['Events in order','Both attempts tell what happened in sequence.','good'],['A line for the listener','Neither attempt says what the listener could do differently.','warn']],prog:'The story now opens inside the scene.',next:'tell the listener what they could do differently. It was missing in both attempts.'}}
+};
+var FW={
+ tech:{name:'Explain it',head:'Four moves for explaining something new',exTitle:'Explaining a cache',steps:[['Concept','Say what it is in one plain sentence.'],['How it works','Walk through it in two or three steps.'],['Example','Show it once with something familiar.'],['Trade-off','Name one strength and one limit.']],
+  ex:['A cache is a small shelf of things you use often.','Before walking to the store room, you check the shelf. If it is there, you are done. If not, you fetch it and keep a copy on the shelf.','Your phone keeps recent photos ready, so the gallery opens instantly.','It is fast, but the shelf is small and can be out of date.']},
+ beh:{name:'Tell the story',head:'Three moves for telling a story',exTitle:'Fixing a slow class portal',steps:[['Situation','Set the scene in one or two sentences.'],['Action','Say what you did, and why.'],['Result','End with what changed.']],
+  ex:['The class portal took eight seconds to load before an exam.','I measured it, found one query running two hundred times, and cached it.','It loaded in under two seconds, and it stayed up on exam day.']},
+ gd:{name:'Make your case',head:'Four moves for making your case',exTitle:'Laptops in class',steps:[['Claim','State your side first.'],['Reason','Give your strongest reason.'],['Example','Make it concrete.'],['Counterpoint','Answer the best objection.']],
+  ex:['Laptops should be allowed in class, with rules.','Notes are faster to take and easier to search later.','In my lab, the students who typed notes found formulas in seconds before the test.','Some get distracted, so screens go down during discussion.']},
+ gen:{name:'Open with the moment',head:'Three moves for a short story',exTitle:'The forgotten ID card',steps:[['Moment','Start inside the scene, not the topic.'],['What happened','Two or three events, in order.'],['Takeaway','End with one sentence to remember.']],
+  ex:['The bus pulled away, and my ID card was still on my desk at home.','I ran back, missed my viva slot, and waited until the afternoon.','Now I pack my bag the night before.']}
+};
+var HS={tech:'Explain a REST API simply',beh:'Tell me about a hard bug you fixed',gd:'Remote or in-office internships?',gen:'A story you learned the hard way'};
+function whyHome(id){var c=CH[id],gs=S.goals.length?S.goals:[c.goal];return gs.indexOf(c.goal)>-1?'Matches your goal: '+GL[c.goal]+'.':'A stretch, outside your chosen goals.'}
+var GOALS=[['interview','Interview answers','Behavioral and HR questions'],['gd','Group discussions','Make and defend a point'],['tech','Technical explanations','Explain clearly to non-experts'],['general','Presentations and everyday speaking','Intros, stories, general talks']];
+var COMF=[['nerv','Nervous','I avoid speaking when I can'],['unsure','Unsure','It depends on the situation'],['ok','Okay','I manage, but it is not smooth'],['comf','Comfortable','I want to sharpen how I explain']];
+var DUR=[[2,'Quick daily habit'],[5,'Room to build a full answer'],[10,'Deep practice sessions']];
+
+var SEEDROWS=[
+ ['sd1','Sep 28','Self-introduction','Tell me about yourself',84,152,10,3,'Add a concrete example','baseline','Hello, so, um, I am a third-year student and I am interested in backend development…','A clear opening and a steady pace.','Back up your interests with one concrete example.'],
+ ['sd2','Oct 1','Interview answer','Tell me about a time you worked in a team',128,246,9,4,'State your point first','','…so the project was about a college event app, and we were four members, and I was handling the database part…','You gave a real situation with detail.','Say the result in your first sentence, then explain how you got there.'],
+ ['sd3','Oct 3','Group discussion','Should attendance be compulsory in college?',112,226,8,3,'State your point first','','…I think attendance should not be compulsory, because learning is not only inside the classroom…','You took a side clearly.','Open with your claim before the background.'],
+ ['sd4','Oct 5','Technical explanation','Explain what a database index is',126,248,7,2,'Explain terms before using them','','…an index is like the page numbers at the back of a book, so the database does not read every row…','Your book analogy made the idea easy to picture.','Define B-tree and lookup in plain words before using them.'],
+ ['sd5','Oct 7','Interview answer','Describe a deadline you almost missed',134,276,6,2,'Add a concrete example','','…two days before submission our deployment failed, and I stayed back to find the cause…','Strong, specific story with a real stake.','Add one concrete number or outcome in the result.'],
+ ['sd6','Oct 8','Technical explanation','Explain how a search engine finds a page',121,255,5,2,'Explain terms before using them','','…imagine a librarian who has already noted down every word in every book…','You opened with a picture before the terms.','Explain “crawler” the first time you say it.'],
+ ['sd7','Oct 9','Group discussion','Is it better to join a startup or a large company first?',118,241,5,1,'Add a counterpoint','','…I would join a startup first because you learn many roles quickly, for example…','Claim, reason and example were all there.','Answer the best objection before you finish.']
+];
+var SEED=SEEDROWS.map(function(r){return {id:r[0],when:r[1],cat:r[2],title:r[3],dur:r[4],words:r[5],fillers:r[6],pauses:r[7],theme:r[8],kind:r[9],excerpt:r[10],went:r[11],improve:r[12]}});
+
+/* ---------- state ---------- */
+var S=null;
+function fresh(){return {goals:[],comfort:null,duration:5,mode:'video',base:false,attempts:[],recs:new Set(),del:new Set(),seeded:false,account:false,prompted:false,keepNow:false,remind:{on:false,time:'8:00 PM'},playing:false,today:null,chal:null}}
+S=fresh();
+function mkAtt(n,id){var c=CH[id],d=n>1?c.a2:c.a1,a=stats({id:'att'+(S.attempts.length+1),kind:'attempt',n:n,when:'Today',ch:id,cat:c.cat,title:c.title,t:d.t,theme:d.theme});a.dur=Math.round(a.words/d.wpm*60);return a}
+function baseSess(){return stats({id:'base',kind:'baseline',when:'Today',cat:'Self-introduction',title:'Tell me about yourself',t:TB,dur:DB,theme:'Add a concrete example'})}
+function sessions(){var cur=[];if(S.base&&!S.seeded)cur.push(baseSess());S.attempts.forEach(function(a){cur.push(a)});return (S.seeded?SEED:[]).concat(cur)}
+function visible(){return sessions().filter(function(s){return !S.del.has(s.id)})}
+function setSeeded(on){S.seeded=on;if(on)S.recs.add('sd4');else S.recs.delete('sd4')}
+function todayPractice(){return visible().some(function(s){return s.when==='Today'&&s.kind==='attempt'})}
+function streak(){return (S.seeded?3:0)+(todayPractice()?1:0)}
+var ORDER=['beh','gd','tech','gen'];
+var GL={interview:'interview answers',gd:'group discussions',tech:'technical explanations',general:'everyday speaking'};
+function attsOf(id){return S.attempts.filter(function(a){return a.ch===id&&!S.del.has(a.id)})}
+function recommend(){var gs=S.goals.length?S.goals:['tech'],c=ORDER.filter(function(id){return gs.indexOf(CH[id].goal)>-1}),fr=c.filter(function(id){return attsOf(id).length===0});return (fr.length?fr:c)[0]}
+function todayId(){if(!S.today)S.today=recommend();return S.today}
+function curId(){return S.chal||todayId()}
+function whyShort(id){var c=CH[id],gs=S.goals.length?S.goals:[c.goal];return gs.indexOf(c.goal)>-1?'It matches your goal, '+GL[c.goal]+'. '+c.short:'Outside your chosen goals, so a stretch. '+c.short}
+function whyFull(id){var c=CH[id],gs=S.goals.length?S.goals:[c.goal],names=gs.map(function(g){return GL[g]}),list=names.length>1?names.slice(0,-1).join(', ')+' and '+names[names.length-1]:names[0],mine=gs.indexOf(c.goal)>-1;
+ return (mine?'You picked '+list+'.'+(gs.length>1?' Today focuses on '+GL[c.goal]+', and we rotate through the others.':''):'You picked '+list+'. This one is outside those goals, so treat it as a stretch.')+' '+c.signal}
+function ex1(t){return plain(first(exc(t))).replace(/^So, um, /,'')}
+function procNote(){var raw=S.mode==='video'?'video':'recording';return S.keepNow?'Your '+raw+' will be saved privately, as you chose. You can delete it any time.':'Your '+raw+' is deleted as soon as this finishes. Only the transcript and results are kept.'}
+function totalTime(v){var t=v.reduce(function(a,s){return a+s.dur},0);return t<90?t+' sec':Math.max(1,Math.round(t/60))+' min'}
+function theme(){return document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark')}
+
+/* ---------- router ---------- */
+var R={},M={},A={},cur=null,ctx={},nav=[],cleanup=null,REC={el:0,target:120};
+var MAIN=['home','practice','progress'];
+var stage=$('#stage');
+function go(n,c,o){c=c||{};o=o||{};if(cleanup){cleanup();cleanup=null}
+ if(o.root)nav=[];else if(!o.replace&&cur)nav.push({n:cur,c:ctx});
+ cur=n;ctx=c;draw(o.dir||'fwd')}
+function back(){if(cleanup){cleanup();cleanup=null}var p=nav.pop();if(!p){cur='home';ctx={}}else{cur=p.n;ctx=p.c}draw('back')}
+function root(n){go(n,{},{root:true,dir:'none'})}
+function redraw(){draw('none')}
+function draw(dir){if(cleanup){cleanup();cleanup=null}var old=stage.firstElementChild,so=old&&old.classList.contains('has-cta')?old.querySelector('.body'):old,st=so?so.scrollTop:0;
+ stage.innerHTML=R[cur](ctx);var pg=stage.firstElementChild;
+ if(dir==='fwd')pg.classList.add('enter');else if(dir==='back')pg.classList.add('enterb');else{var sp=pg.classList.contains('has-cta')?pg.querySelector('.body'):pg;sp.scrollTop=st}
+ var tb=$('#tabbar'),main=MAIN.indexOf(cur)>-1;tb.hidden=!main;
+ $$('.tb').forEach(function(b){if(b.dataset.to===cur)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+ if(M[cur])cleanup=M[cur](ctx)||null;
+ if(dir!=='none'){pg.setAttribute('tabindex','-1');try{pg.focus({preventScroll:true})}catch(e){}}}
+
+/* ---------- layers ---------- */
+function layer(id,html,dismiss){var w=$(id);w.innerHTML=html;void w.offsetWidth;w.classList.add('open');w.dataset.dismiss=dismiss===false?'0':'1'}
+function sheet(html,dismiss){layer('#sheet','<div class="scrim" data-act="closeSheet"></div><div class="sheet" role="dialog" aria-modal="true">'+html+'</div>',dismiss);var b=$('#sheet .sheet button');if(b)b.focus()}
+function closeSheet(){$('#sheet').classList.remove('open')}
+var DLGF=[];
+function dlg(icon,text,sub,btns){DLGF=btns.map(function(b){return b[1]});
+ layer('#dlg','<div class="scrim"></div><div class="dlgbox" role="alertdialog" aria-modal="true"><div class="di">'+ic(icon,36)+'</div><p>'+text+'</p>'+(sub?'<small>'+sub+'</small>':'')+btns.map(function(b,i){return '<button data-act="dlgBtn" data-i="'+i+'">'+b[0]+'</button>'}).join('')+'</div>',false)}
+function closeDlg(){$('#dlg').classList.remove('open')}
+var tt=null;
+function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('show')},2400)}
+
+/* ---------- template helpers ---------- */
+function page(cls,body,cta){return '<div class="page '+cls+(cta?' has-cta':'')+'"><div class="body">'+body+'</div>'+(cta?'<div class="cta">'+cta+'</div>':'')+'</div>'}
+function dots(n){return '<div class="dots" role="img" aria-label="Step '+(n+1)+' of 3">'+[0,1,2].map(function(i){return '<i class="'+(i<=n?'on':'')+'"></i>'}).join('')+'</div>'}
+function hdr(o){o=o||{};return '<div class="hdr">'+(o.back===false?'<span class="sp"></span>':'<button class="ib" data-act="back" aria-label="Back">'+ic('back')+'</button>')+(o.dots!=null?dots(o.dots):'<span class="sp"></span>')+(o.right||'<span class="sp"></span>')+'</div>'}
+function opt(act,v,t,s,on,k){return '<button class="opt" data-act="'+act+'" data-v="'+v+'" data-k="'+(k||'c')+'" aria-pressed="'+!!on+'"><span class="ot"><b>'+t+'</b>'+(s?'<small>'+s+'</small>':'')+'</span><span class="ck">'+(on?ic('check',16):'')+'</span></button>'}
+function seg(act,items,val){return '<div class="seg" role="group">'+items.map(function(i){return '<button data-act="'+act+'" data-v="'+i[0]+'" aria-pressed="'+(String(i[0])===String(val))+'">'+i[1]+'</button>'}).join('')+'</div>'}
+function mtiles(s){return '<div class="mt"><div class="m"><b>'+fmt(s.dur)+'</b><span>Duration</span></div><div class="m"><b>'+s.words+'</b><span>Words</span></div><div class="m"><b>'+wpm(s)+'</b><span>Words per min</span></div><div class="m"><b>'+s.fillers+'</b><span>Filler words</span></div><div class="m"><b>'+s.pauses+'</b><span>Pauses over 2 s</span></div><div class="m"><b>'+rate(s)+'</b><span>Fillers per 100 words</span></div></div>'}
+function quote(t,label){return '<blockquote class="quote"><small>'+label+'</small>“'+re(exc(t))+'”</blockquote>'}
+function protoChip(){return '<span class="proto">'+ic('spark',14)+'Prototype: sample answer, not your voice</span>'}
+function profBtn(){return '<button class="ib" data-act="go" data-to="profile" aria-label="Profile and settings">'+ic('user')+'</button>'}
+
+/* ---------- the voice, drawn as a line ---------- */
+function P(a,w,h,amp,ph){var n=a.length,m=h/2,d='';for(var i=0;i<n;i++){var x=n>1?i/(n-1)*w:0,e=Math.min(1,i/8,(n-1-i)/8+.12);d+=(i?'L':'M')+x.toFixed(1)+','+(m+Math.sin(i*.85+ph)*a[i]*amp*e).toFixed(1)}return d}
+var DEMO=[];for(var di=0;di<60;di++)DEMO.push(.35+.35*Math.sin(di*.18)+.15*Math.sin(di*.7));
+var TH='<svg class="th" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"><path id="hp2" fill="none" stroke="#FF7A66" stroke-width="2.5" stroke-linecap="round"/><path id="hp1" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/></svg>';
+function hsh(w){var s=0;for(var i=0;i<w.length;i++)s=(s*31+w.charCodeAt(i))%97;return s/97}
+function trace(t){var lv=[],pz=[],ex=null,inH=false,fl=false,rx=/(\[\[pause:([\d.]+)\]\])|(<\/?h>)|(<f>)|(<\/f>)|(<[^>]+>)|([^\s<\[]+)/g,m;
+ while((m=rx.exec(t))){
+  if(m[1]){var sec=parseFloat(m[2]),k=Math.max(2,Math.round(sec*2)),st=lv.length;for(var j=0;j<k;j++)lv.push(.04);if(sec>=2)pz.push(st+(k>>1))}
+  else if(m[3]){if(m[3]==='<h>'){inH=true;ex=ex||[lv.length,lv.length]}else{inH=false;if(ex)ex[1]=lv.length-1}}
+  else if(m[4]){fl=true}else if(m[5]){fl=false}
+  else if(m[6]){}
+  else if(m[7]){lv.push(fl?.2:.2+.75*Math.pow(hsh(m[7]),1.3));if(inH&&ex)ex[1]=lv.length-1}}
+ return {lv:lv,pz:pz,ex:ex}}
+function tcard(t,o){o=o||{};var H=o.h||110,tr=trace(t),n=tr.lv.length,W=300,mid=H/2,amp=H*.34,pts=[],i;
+ for(i=0;i<n;i++){var e=Math.min(1,i/8,(n-1-i)/8+.12);pts.push([i/(n-1)*W,mid+(Math.sin(i*.85)*.7+Math.sin(i*1.9+1.3)*.3)*tr.lv[i]*amp*e])}
+ function d(a,b){var s='';for(var k=a;k<=b;k++)s+=(k===a?'M':'L')+pts[k][0].toFixed(1)+','+pts[k][1].toFixed(1);return s}
+ var ex=tr.ex?'<path class="exp" d="'+d(tr.ex[0],tr.ex[1])+'" fill="none" stroke="#FF7A66" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>':'';
+ var rg=tr.pz.map(function(k){return '<i class="rg" style="left:'+(k/(n-1)*100).toFixed(1)+'%;top:'+(pts[k][1]/H*100).toFixed(1)+'%"></i>'}).join('');
+ var mk=(tr.ex&&o.mark)?'<span class="tmk" style="left:'+Math.max(16,Math.min(84,(tr.ex[0]+tr.ex[1])/2/(n-1)*100)).toFixed(1)+'%">'+o.mark+'</span>':'';
+ return '<div class="tcard'+(H<80?' mini':'')+'"><div class="between"><span class="cap">'+(o.cap||'Your answer, as a line')+'</span><span class="cap">'+(o.right||'')+'</span></div><div class="tarea">'+mk+'<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Your answer drawn as a line. Pauses over two seconds are ringed."><path class="main" pathLength="1" d="'+d(0,n-1)+'" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>'+ex+'</svg>'+rg+'</div>'+(o.legend?'<p class="note" style="margin:10px 0 0">'+o.legend+'</p>':'')+'</div>'}
+function smooth(p){var d='M'+p[0][0].toFixed(1)+','+p[0][1].toFixed(1);for(var i=0;i<p.length-1;i++){var a=p[i-1]||p[i],b=p[i],c=p[i+1],e=p[i+2]||c;d+='C'+[b[0]+(c[0]-a[0])/6,b[1]+(c[1]-a[1])/6,c[0]-(e[0]-b[0])/6,c[1]-(e[1]-b[1])/6,c[0],c[1]].map(function(v){return v.toFixed(1)}).join(',')}return d}
+
+/* ---------- first use ---------- */
+R.splash=function(){return '<div class="page splash bgl"><div class="logo">'+logo(64)+'</div><div class="wm">Speak5</div><p class="tag">Speak better. Every day.</p></div>'};
+M.splash=function(){var t=setTimeout(function(){go('goals',{},{root:true})},reduce?600:1500);return function(){clearTimeout(t)}};
+
+R.goals=function(){var n=S.goals.length;return page('',hdr({back:false,dots:0})+'<h1>What do you want to get better at?</h1><p class="sub">Pick one or more. You can change this anytime.</p><div class="stack">'+GOALS.map(function(g){return opt('goalToggle',g[0],g[1],g[2],S.goals.indexOf(g[0])>-1,'c')}).join('')+'</div>','<button class="btn primary" data-act="goalsNext" '+(n?'':'disabled aria-disabled="true"')+'>Continue</button>'+(n?'':'<p class="hint">Choose at least one to continue.</p>'))};
+R.comfort=function(){return page('',hdr({dots:1})+'<h1>How comfortable are you speaking right now?</h1><p class="sub">This is only a starting point. It is not a score.</p><div class="stack">'+COMF.map(function(c){return opt('comfortSet',c[0],c[1],c[2],S.comfort===c[0],'r')}).join('')+'</div>','<button class="btn primary" data-act="comfortNext" '+(S.comfort?'':'disabled aria-disabled="true"')+'>Continue</button>')};
+R.duration=function(){return page('',hdr({dots:2})+'<h1>How long should a usual practice be?</h1><p class="sub">This is speaking time. Each challenge adds about a minute to prepare first. You can change it before any session.</p><div class="stack">'+DUR.map(function(d){var on=S.dur===d[0];return '<button class="opt" data-act="durSet" data-v="'+d[0]+'" data-k="r" aria-pressed="'+(S.duration===d[0]&&S.durPicked)+'"><span class="optrow"><span class="big">'+d[0]+'</span><span class="ot"><b>minutes of speaking</b><small>'+d[1]+'</small></span></span><span class="ck">'+(S.duration===d[0]&&S.durPicked?ic('check',16):'')+'</span></button>'}).join('')+'</div>','<button class="btn primary" data-act="durNext" '+(S.durPicked?'':'disabled aria-disabled="true"')+'>Continue</button>')};
+R.bIntro=function(){return page('',hdr({})+'<p class="eyebrow">Baseline</p><h1>First, let’s <em>hear</em> you</h1><p class="sub">This is not a test. It gives us a starting point to compare against.</p><div class="hero" style="margin-top:22px"><span class="tg">Your prompt · 2 minutes</span><p class="hp" style="font-size:30px">Tell me about yourself.</p><p class="hm" style="margin:0">No tips and no method this time. Just speak naturally.</p></div><div class="dl" style="margin-top:20px"><div class="d"><span class="dot">'+ic('shield',16)+'</span><span><b>Nothing is scored.</b> You will see what we notice and where to start.</span></div><div class="d"><span class="dot">'+ic('clock',16)+'</span><span><b>There is no pause button.</b> Find a quiet spot and finish when you are done.</span></div></div>','<button class="btn primary" data-act="bStart">Start baseline</button>')};
+R.access=function(){var err=ctx.err;return page('',hdr({})+'<h1>Camera and microphone</h1><p class="sub">Before Android asks, here is why.</p><div class="dl" style="margin-top:18px"><div class="d"><span class="dot">'+ic('mic',16)+'</span><span><b>Microphone.</b> Needed so Speak5 can hear and transcribe your answer. Audio may be processed by a speech-to-text service to create the transcript.</span></div><div class="d"><span class="dot">'+ic('video',16)+'</span><span><b>Camera.</b> Optional. Lets you watch yourself back and practise eye contact.</span></div><div class="d"><span class="dot">'+ic('lock',16)+'</span><span><b>Your video is deleted after processing</b> unless you choose to keep it.</span></div></div>'+(err?'<div class="card" style="margin-top:18px;border-color:var(--rec)"><h3>Microphone is off</h3><p>Speak5 cannot coach without it. Try again, or allow it in Android settings.</p></div>':'')+'<h2>How do you want to practise?</h2><div class="stack" style="margin-top:0">'+opt('modeSet','video','Video','Camera and voice',S.mode==='video','r')+opt('modeSet','voice','Voice only','No camera',S.mode==='voice','r')+'</div>','<button class="btn primary" data-act="accessGo">'+(err?'Try again':'Continue')+'</button><p class="hint">If you skip the camera, voice-only practice works the same.</p>')};
+
+R.rec=function(c){var base=c.k==='base',target=base?120:S.duration*60,prompt=base?'Tell me about yourself.':CH[curId()].prompt,vid=S.mode==='video',H=vid?100:240;REC.target=target;REC.el=0;
+ return '<div class="page rec"><div class="top"><span class="ind" role="status" aria-label="Recording"><i></i>Recording</span><span class="tm"><b id="tm">0:00</b> <span>/ '+fmt(target)+(vid?' · video':' · voice only')+'</span></span></div><div class="bar3" aria-hidden="true"><i id="pg"></i></div><p class="pr">'+prompt+'</p>'+(vid?'<div class="cam"><span>Camera preview, simulated</span><svg viewBox="0 0 200 150" fill="currentColor" aria-hidden="true"><circle cx="100" cy="58" r="30"/><path d="M30 150c0-38 31-60 70-60s70 22 70 60z"/></svg></div>':'')+'<svg class="thread" style="height:'+H+'px" viewBox="0 0 324 '+H+'" aria-hidden="true"><defs><filter id="gl" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="6"/></filter></defs><path id="tg" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".5" filter="url(#gl)"/><path id="t2" fill="none" stroke="#FF7A66" stroke-width="2.5" stroke-linecap="round"/><path id="t1" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/></svg><div class="rbtns"><button class="stop" data-act="recFinish" aria-label="Finish recording"><i></i></button><span class="fl">Finish</span><button class="dis" data-act="recDiscard">Discard</button><span class="dnote">Demo voice · clock ×'+D+'</span></div><div class="cd" id="cd" role="status"><span id="cn">3</span><small>Take a breath</small></div></div>'};
+M.rec=function(c){var target=REC.target,timers=[],raf=0,n=3,t0=0,levels=[],tgt=.5,cur=.1,nx=0,lastL=0,ph=0,vid=S.mode==='video',H=vid?100:240,cd=$('#cd'),cn=$('#cn'),tm=$('#tm'),pg=$('#pg'),t1=$('#t1'),t2=$('#t2'),tg=$('#tg');
+ function step(){if(n===0){cd.style.display='none';t0=performance.now();raf=requestAnimationFrame(loop);return}
+  cn.textContent=n;cn.style.animation='none';void cn.offsetWidth;cn.style.animation='';n--;timers.push(setTimeout(step,reduce?500:900))}
+ function loop(t){var el=Math.min(target,(t-t0)/1000*D);REC.el=el;tm.textContent=fmt(el);pg.style.width=(el/target*100)+'%';
+  if(t>=nx){tgt=Math.random()<.16?.05:.35+Math.random()*.65;nx=t+250+Math.random()*450}
+  if(t-lastL>=60){cur+=(tgt-cur)*.45;levels.push(cur);lastL=t}
+  ph+=reduce?0:.12;var w=levels.slice(-70);
+  t1.setAttribute('d',P(w,324,H,H*.42,ph));t2.setAttribute('d',P(w,324,H,H*.3,ph*1.4+1.6));tg.setAttribute('d',P(w,324,H,H*.42,ph));
+  if(el>=target){go('recDone',{k:c.k,el:target},{replace:true});return}
+  raf=requestAnimationFrame(loop)}
+ step();return function(){timers.forEach(clearTimeout);cancelAnimationFrame(raf)}};
+
+R.recDone=function(c){var keep=S.keepNow;return page('',hdr({back:false})+'<p class="eyebrow">Take complete</p><h1>You spoke for '+fmt(c.el)+'</h1><p class="sub">Finishing early is fine. Analysis uses what you said.</p><p class="note">'+protoChip()+'</p><h2>What should we keep?</h2><div class="stack" style="margin-top:0">'+opt('keepSet','no','Results only','Transcript and coaching are kept. The raw '+(S.mode==='video'?'video':'recording')+' is deleted after processing.',!keep,'r')+opt('keepSet','yes','Also keep this recording','Stored privately, with no public link. You can delete it any time.',keep,'r')+'</div>','<button class="btn primary" data-act="analyse" data-k="'+c.k+'">Analyse my answer</button><button class="btn txt" data-act="redo" data-k="'+c.k+'">Discard and record again</button>')};
+
+var STAGES=['Transcribing your answer','Reading structure and examples','Measuring pace, pauses and fillers','Preparing your coaching'];
+R.proc=function(c){return page('bgl',hdr({back:false})+'<h1>Working on your <em>answer</em></h1><p class="sub">'+procNote()+'</p><svg class="pth" viewBox="0 0 300 70" preserveAspectRatio="none" aria-hidden="true"><path id="pp" fill="none" stroke-width="3.5" stroke-linecap="round"/></svg><div class="stg" role="status">'+STAGES.map(function(s,i){return '<div class="sg" data-i="'+i+'"><span class="si"></span>'+s+'</div>'}).join('')+'</div><p class="note" style="margin-top:22px">'+protoChip()+'<br>These steps are simulated. A real run shows each one only while it is happening.</p><p class="note">In the real app, your audio may be processed by a speech-to-text service to create the transcript, and the transcript by an AI service to write your coaching. See Privacy and data.</p>')};
+M.proc=function(c){var i=0,timers=[],gap=reduce?350:1050,pp=$('#pp'),ph=0,raf=0;
+ function tl(){ph+=reduce?0:.06;if(pp)pp.setAttribute('d',P(DEMO,300,70,26,ph));if(!reduce)raf=requestAnimationFrame(tl)}
+ function step(){var els=$$('.sg');els.forEach(function(e,k){e.className='sg'+(k<i?' done':k===i?' on':'');e.querySelector('.si').innerHTML=k<i?ic('check',14):''});
+  if(i>=STAGES.length){timers.push(setTimeout(finish,300));return}i++;timers.push(setTimeout(step,gap))}
+ function finish(){var kept=S.keepNow;S.keepNow=false;
+  if(c.k==='base'){S.base=true;if(kept)S.recs.add('base');go('bResult',{},{replace:true})}
+  else{var id=curId(),k=attsOf(id).length+1,a=mkAtt(k,id);S.attempts.push(a);if(kept)S.recs.add(a.id);if(k===1)go('feedback',{},{replace:true});else go('compare',{},{replace:true})}}
+ tl();step();return function(){timers.forEach(clearTimeout);cancelAnimationFrame(raf)}};
+R.error=function(){return page('',hdr({back:false})+'<div class="center">'+ic('cloud',40)+'</div><h1>We couldn’t finish analysing</h1><p class="sub">Your answer is safe on this phone and nothing was lost. This usually passes, so try again.</p>','<button class="btn primary" data-act="go" data-to="proc" data-k="att">Try again</button><button class="btn txt" data-act="tab" data-to="home">Back to home</button>')};
+
+R.bResult=function(){var b=baseSess();return page('',hdr({back:false})+'<p class="eyebrow">Your starting point</p><h1>Here is where you are <em>today</em></h1><p class="sub">Not a score. Just a reference to compare against later.</p><p class="note">'+protoChip()+'</p>'+tcard(b.t,{h:110,right:fmt(b.dur),mark:'Quoted below',legend:'Coral marks the part quoted below. Rings mark pauses over 2 seconds, shown and not judged.'})+'<h2>Delivery</h2>'+mtiles(b)+'<p class="note">Pace and pauses are shown for reference only. There is no single right speed: it changes with the task and the audience.</p><h2>One thing we noticed</h2><div class="card"><h3>You name skills but never show one</h3><p>Your intro lists interests and tools, but there is no single example to picture. One short story about something you built would make it memorable.</p>'+quote(TB,'From your answer')+'</div>','<button class="btn primary" data-act="bDone">Continue</button>')};
+R.keep=function(){return page('',hdr({back:false})+'<div class="center">'+ic('cloud',40)+'</div><h1>Keep your <em>progress</em></h1><p class="sub">Right now your baseline and sessions live on this phone only. If you clear app data, uninstall, or switch phones, they can be lost.</p><div class="card" style="margin-top:20px"><p style="margin:0">With an account, your history syncs across devices and everything you have done so far moves over.</p></div>','<button class="btn white" data-act="acctGoogle" style="border:1px solid var(--ln)">Continue with Google</button><button class="btn ghost" data-act="go" data-to="account">Use email instead</button><button class="btn txt" data-act="later">Maybe later</button>')};
+
+/* ---------- main tabs ---------- */
+R.home=function(){var v=visible(),tid=todayId(),c=CH[tid],ta=attsOf(tid),done=ta.length>0,n=streak(),now=new Date(),WD=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],FULL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'],ti=(now.getDay()+6)%7,hero,
+ tp=todayPractice(),past=S.seeded?3:0,dd=0,
+ wk=['M','T','W','T','F','S','S'].map(function(l,i){var dn=(i===ti&&tp)||(i<ti&&i>=ti-past);if(dn)dd++;return '<i role="img" aria-label="'+FULL[i]+(dn?', practised':i===ti?', today':'')+'" class="'+(dn?'d':i===ti?'t':'')+'">'+l+'</i>'});
+ if(!done)hero='<div class="hero"><span class="tg">Today’s challenge</span><p class="hp">'+HS[tid]+'</p>'+TH+'<p class="hm">'+S.duration+' min speaking · '+c.cat+'</p><button class="btn white" data-act="go" data-to="challenge" data-id="'+tid+'">Start challenge</button></div><p class="why"><b>Why this one:</b> '+whyHome(tid)+'</p>';
+ else hero='<div class="hero"><div class="between"><span class="tg">Today’s challenge</span><span class="chip">'+ic('check',14)+' Done</span></div><p class="hp">'+HS[tid]+'</p>'+TH+'<p class="hm">'+ta.length+(ta.length>1?' attempts':' attempt')+' saved</p><div class="stack" style="margin-top:0;gap:8px"><button class="btn white" data-act="go" data-to="'+(ta.length>1?'compare':'feedback')+'" data-id="'+tid+'">'+(ta.length>1?'See what changed':'See feedback')+'</button><button class="btn ghostw" data-act="go" data-to="retry" data-id="'+tid+'">Try again</button></div></div>'+(ta.length>1?'<p class="why"><b>Next focus:</b> '+c.cmp.next+'</p>':'');
+ var rec=v.slice(-3).reverse();
+ return page('tabs home','<div class="top"><span>'+WD[now.getDay()]+'</span><span class="rt">'+(n?'<span class="pill"><i></i>'+n+'-day streak</span>':'')+profBtn()+'</span></div><h1 style="margin-top:12px;font-size:36px">Ready for one <em>clear</em> answer?</h1>'+hero+'<div class="sec"><span>This week</span><small>'+dd+' of 7 days</small></div><div class="week" role="group" aria-label="This week">'+wk.join('')+'</div><p class="note">'+v.length+(v.length===1?' session':' sessions')+' · '+totalTime(v)+' of speaking</p>'+(rec.length?'<div class="sec" style="margin-top:24px"><span>Recent practice</span><button class="lk" data-act="go" data-to="history">See all</button></div><div class="card" style="padding:4px 16px"><div class="list">'+rec.map(histRow).join('')+'</div></div>':''))};
+M.home=function(){var a=$('#hp1'),b=$('#hp2'),ph=0,raf=0;if(!a)return;
+ function loop(){ph+=reduce?0:.03;a.setAttribute('d',P(DEMO,300,60,24,ph));b.setAttribute('d',P(DEMO,300,60,16,ph*1.4+1.5));if(!reduce)raf=requestAnimationFrame(loop)}
+ loop();return function(){cancelAnimationFrame(raf)}};
+M.practice=M.home;
+function histRow(s){return '<button class="li" data-act="open" data-id="'+s.id+'"><span class="t"><b>'+(s.title.length>34?s.title.slice(0,32)+'…':s.title)+'</b><small>'+s.when+' · '+fmt(s.dur)+' · '+s.fillers+' fillers</small></span><span class="r">'+(S.recs.has(s.id)?ic('video',16):'')+ic('chev',16)+'</span></button>'}
+
+R.practice=function(){var tid=todayId(),c=CH[tid],gs=S.goals.length?S.goals:[c.goal],alts=ORDER.filter(function(k){return k!==tid}).sort(function(a,b){return (gs.indexOf(CH[b].goal)>-1)-(gs.indexOf(CH[a].goal)>-1)});
+ return page('tabs home','<div class="top"><span>Practice</span>'+profBtn()+'</div><h1 style="margin-top:12px">Choose what to <em>practise</em>.</h1><p class="sub">One recommendation a day, and a few good alternatives.</p><div class="hero"><span class="tg">Recommended</span><p class="hp">'+HS[tid]+'</p>'+TH+'<p class="hm">'+S.duration+' min speaking · '+c.cat+'</p><button class="btn white" data-act="go" data-to="challenge" data-id="'+tid+'">Start challenge</button></div><p class="why"><b>Why this one:</b> '+whyHome(tid)+'</p><h2>Alternatives</h2><div class="stack" style="margin-top:0">'+alts.map(function(k){var a=CH[k],mine=gs.indexOf(a.goal)>-1;return '<button class="opt" data-act="go" data-to="challenge" data-id="'+k+'" style="align-items:flex-start"><span class="ot"><span class="chip'+(mine?' ac':'')+'" style="align-self:flex-start;margin-bottom:6px">'+a.cat+(mine?' · your goal':'')+'</span><b style="line-height:1.35">'+a.prompt+'</b><small>'+FW[a.fw].name+' · '+FW[a.fw].steps.map(function(s){return s[0]}).join(' → ')+'</small></span>'+ic('chev',18)+'</button>'}).join('')+'</div>')};
+
+R.challenge=function(c){var id=c.id||curId(),ch=CH[id];
+ return page('',hdr({})+'<span class="chip ac">'+ch.cat+'</span><h1 style="margin-top:12px;font-size:30px">'+ch.prompt+'</h1><h2>Speaking time</h2>'+seg('durSet',[[2,'2 min'],[5,'5 min'],[10,'10 min']],S.duration)+'<p class="note" style="margin-top:8px">This is the time you speak. Preparation is extra: about 1 minute to think before recording.</p><h2>Record as</h2>'+seg('modeSet',[['video','Video'],['voice','Voice only']],S.mode)+'<h2>Why this challenge</h2><div class="card"><p style="margin:0;color:var(--tx)">'+whyFull(id)+'</p></div><div class="card" style="margin-top:10px"><h3>What it trains</h3><p>'+ch.trains+'</p><div class="row" style="margin-top:12px">'+ch.tags.map(function(t){return '<span class="chip">'+t+'</span>'}).join('')+'</div></div>','<button class="btn primary" data-act="go" data-to="framework" data-id="'+id+'">See the method</button>')};
+
+R.framework=function(){var ch=CH[curId()],f=FW[ch.fw];return page('',hdr({})+'<p class="eyebrow">Method · '+f.name+'</p><h1 style="font-size:34px">'+f.head+'</h1><div class="steps">'+f.steps.map(function(s,i){return '<div class="step"><span class="n">'+(i+1)+'</span><div><b>'+s[0]+'</b><span>'+s[1]+'</span></div></div>'}).join('')+'</div><h2>See it in action</h2><div class="card"><h3>'+f.exTitle+'</h3>'+f.steps.map(function(s,i){return '<p><b style="color:var(--tx)">'+s[0]+'.</b> '+f.ex[i]+'</p>'}).join('')+'</div><p class="note">This is a teaching aid, not a script. Use your own words. Later sessions show a shorter cue.</p>','<button class="btn primary" data-act="go" data-to="prep">Start preparing</button>')};
+
+R.prep=function(c){var ch=CH[curId()],f=FW[ch.fw],cnt=f.steps.length===3?'three':'four';return page('',hdr({})+'<p class="eyebrow">Preparation</p><h1 style="font-size:34px">Take a minute to think</h1><p class="sub">'+ch.prompt+'</p><div class="ring"><svg viewBox="0 0 190 190" aria-hidden="true"><circle cx="95" cy="95" r="86" fill="none" stroke="var(--sf2)" stroke-width="8"/><circle id="pring" cx="95" cy="95" r="86" fill="none" stroke="var(--ac)" stroke-width="8" stroke-linecap="round" stroke-dasharray="540" stroke-dashoffset="0"/></svg><b id="ptm">1:00</b></div><p class="of" style="margin-top:10px"><span class="proto">Demo clock ×'+D+'</span></p><h2>Your '+cnt+' moves</h2><div class="row">'+f.steps.map(function(s,i){return '<span class="chip ac">'+(i+1)+' · '+s[0]+'</span>'}).join('')+'</div><p class="note">No notes needed. Just think through the '+cnt+' moves.</p>','<button class="btn primary" data-act="prepGo">I am ready, start recording</button>')};
+M.prep=function(){var total=60,t0=performance.now(),raf;function loop(t){var el=Math.min(total,(t-t0)/1000*D),left=total-el;var a=$('#ptm'),b=$('#pring');if(!a)return;a.textContent=fmt(Math.ceil(left));b.setAttribute('stroke-dashoffset',(540*(el/total)).toFixed(1));if(el>=total){A.prepGo();return}raf=requestAnimationFrame(loop)}raf=requestAnimationFrame(loop);return function(){cancelAnimationFrame(raf)}};
+
+R.feedback=function(){var id=curId(),ch=CH[id],a=attsOf(id)[0]||mkAtt(1,id),jn=(exc(a.t).match(/<j>/g)||[]).length;
+ return page('',hdr({back:false,right:'<button class="ib" data-act="tab" data-to="home" aria-label="Close">'+ic('x')+'</button>'})+'<p class="eyebrow">Attempt 1 · '+a.cat+'</p><h1 style="font-size:34px">'+ch.fb.head+'</h1><p class="note">'+protoChip()+'</p>'+tcard(a.t,{h:110,right:fmt(a.dur),mark:'Quoted below',legend:'Coral marks the part quoted below. Rings mark pauses over 2 seconds, shown and not judged.'})+'<h2>What went well</h2><div class="card"><p style="margin:0;color:var(--tx)">'+ch.fb.well+'</p></div><h2>Priority improvement</h2><div class="card" style="border-color:var(--warn)"><h3>'+ch.fb.pri+'</h3><p>'+ch.fb.priBody.replace('{n}',jn)+'</p>'+quote(a.t,'From your answer')+'</div><h2>Answer quality</h2><div class="card" style="padding:4px 16px"><div class="list">'+ch.fb.rows.map(function(r){return '<div class="li" style="cursor:default"><span class="t"><b>'+r[0]+'</b></span><span class="chip '+r[2]+'">'+r[1]+'</span></div>'}).join('')+'</div></div><h2>Delivery</h2>'+mtiles(a)+'<p class="note">Pauses are shown, not judged. '+ch.fb.note+'</p>','<button class="btn primary" data-act="go" data-to="coaching">Learn how to improve this</button>')};
+
+R.coaching=function(){var id=curId(),ch=CH[id],a=attsOf(id)[0]||mkAtt(1,id);return page('',hdr({})+'<p class="eyebrow">Technique</p><h1 style="font-size:34px">'+ch.co.head+'</h1><h2 style="margin-top:20px">Why this part needs work</h2><div class="card"><p style="margin:0;color:var(--tx)">'+ch.co.why+'</p></div><h2>The technique</h2><div class="steps" style="margin-top:0">'+ch.co.steps.map(function(s,i){return '<div class="step"><span class="n">'+(i+1)+'</span><div><b>'+s[0]+'</b><span>'+s[1]+'</span></div></div>'}).join('')+'</div><h2>One sentence, reworked</h2><div class="ba"><div class="card"><small>Your words</small><p>“'+ex1(a.t)+'”</p></div><div class="card"><small>One way to say it</small><p>“'+ch.co.after+'”</p></div></div><p class="note">We only reworked one sentence on purpose. Use your own words and do not memorise this one.</p>','<button class="btn primary" data-act="go" data-to="retry">Retry with this technique</button>')};
+
+R.retry=function(){var ch=CH[curId()];return page('',hdr({})+'<p class="eyebrow">Retry</p><h1 style="font-size:34px">Same challenge, new approach</h1><p class="sub">'+ch.prompt+'</p><div class="card" style="margin-top:20px;border-color:var(--ac)"><h3>Your cue</h3><div class="dl">'+ch.cue.map(function(c,i){return '<div class="d"><span class="dot">'+(i+1)+'</span><span>'+c+'</span></div>'}).join('')+'</div></div><p class="note">Every attempt is saved separately, so you can compare them after.</p>','<button class="btn primary" data-act="retryGo">Start recording</button><button class="btn txt" data-act="go" data-to="prep">Prepare for a minute first</button>')};
+
+R.compare=function(){var id=curId(),ch=CH[id],v=attsOf(id);
+ if(v.length<2)return page('',hdr({back:false,right:'<button class="ib" data-act="tab" data-to="home" aria-label="Close">'+ic('x')+'</button>'})+'<h1>Nothing to compare yet</h1><p class="sub">Compare needs two saved attempts of the same challenge.</p>','<button class="btn primary" data-act="go" data-to="retry">Try again</button>');
+ var a=v[0],b=v[v.length-1],ra=S.recs.has(a.id),rb=S.recs.has(b.id);
+ function row(l,x,y){var d=y-x;return '<tr><td>'+l+'</td><td>'+x+'</td><td>'+y+'</td><td>'+(d>0?'+':d<0?'−':'')+Math.abs(Math.round(d*10)/10)+'</td></tr>'}
+ return page('',hdr({back:false,right:'<button class="ib" data-act="tab" data-to="home" aria-label="Close">'+ic('x')+'</button>'})+'<p class="eyebrow">Attempt 1 vs attempt '+b.n+'</p><h1 style="font-size:34px">'+ch.cmp.head+'</h1><p class="sub">Here is what changed in your own words and numbers. No overall score.</p><p class="note">'+protoChip()+'</p><h2>Your two answers</h2>'+tcard(a.t,{h:64,cap:'Attempt 1',right:fmt(a.dur)})+tcard(b.t,{h:64,cap:'Attempt '+b.n,right:fmt(b.dur)})+'<p class="note">Coral marks the part compared below. Rings mark pauses over 2 seconds.</p><h2>'+ch.cmp.label+'</h2><div class="ba"><div class="card"><small>Attempt 1</small><p>“'+ex1(a.t)+'”</p></div><div class="card"><small>Attempt '+b.n+'</small><p>“'+ex1(b.t)+'”</p></div></div><h2>What changed</h2><div class="card" style="padding:4px 16px"><div class="list">'+ch.cmp.rows.map(function(r){return '<div class="li" style="cursor:default"><span class="t"><b>'+r[0]+'</b><small>'+r[1]+'</small></span><span class="chip '+r[2]+'">'+(r[2]==='good'?'Changed':'Still open')+'</span></div>'}).join('')+'</div></div><h2>Delivery</h2><div class="card" style="padding:6px 16px"><table class="tbl"><thead><tr><th></th><th>Attempt 1</th><th>Attempt '+b.n+'</th><th>Change</th></tr></thead><tbody>'+row('Duration (s)',a.dur,b.dur)+row('Words',a.words,b.words)+row('Words per min',wpm(a),wpm(b))+row('Filler words',a.fillers,b.fillers)+row('Pauses over 2 s',a.pauses,b.pauses)+'</tbody></table></div><p class="note">Different wording changes these counts, and one retry is a small sample. Treat them as hints, not verdicts.</p><h2>Recordings</h2><div class="card"><div class="between"><span>Attempt 1</span><span class="chip">'+(ra?'Saved privately':'Results only')+'</span></div>'+(ra?playBar():'')+'<div class="between" style="margin-top:12px"><span>Attempt '+b.n+'</span><span class="chip">'+(rb?'Saved privately':'Results only')+'</span></div>'+(rb?playBar():'')+(!ra&&!rb?'<p>Nothing was saved, so there is no playback. You chose results only.</p>':'')+'</div>','<button class="btn primary" data-act="tab" data-to="home">Done for today</button><button class="btn ghost" data-act="go" data-to="retry">Try another attempt</button>')};
+function playBar(){return '<div class="play"><button data-act="togglePlay" aria-label="'+(S.playing?'Pause':'Play')+' recording">'+ic(S.playing?'pause':'play',16)+'</button><div class="bar" style="flex:1;margin:0"><i style="width:'+(S.playing?'46':'0')+'%"></i></div><span class="proto">Simulated</span></div>'}
+
+/* ---------- progress / history ---------- */
+function spark(vals,o){if(vals.length<2)return '<p class="note">Trends appear after your second session.</p>';
+ var W=300,H=110,px=10,py=16,mn=Math.min.apply(null,vals.concat(o.band?[o.band[0]]:[])),mx=Math.max.apply(null,vals.concat(o.band?[o.band[1]]:[])),r=(mx-mn)||1,k=vals.length-1;
+ function X(i){return px+i*(W-2*px)/k}function Y(v){return H-py-(v-mn)/r*(H-2*py)}
+ var p=vals.map(function(v,i){return [X(i),Y(v)]}),
+ band=o.band?'<rect x="0" y="'+Y(o.band[1]).toFixed(1)+'" width="'+W+'" height="'+(Y(o.band[0])-Y(o.band[1])).toFixed(1)+'" rx="10" fill="var(--acsoft)"/>':'';
+ return '<svg class="spark" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+o.label+'">'+band+'<path d="'+smooth(p)+'" fill="none" stroke="var(--ac)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="'+p[k][0].toFixed(1)+'" cy="'+p[k][1].toFixed(1)+'" r="11" fill="var(--ac)" opacity=".18"/><circle cx="'+p[k][0].toFixed(1)+'" cy="'+p[k][1].toFixed(1)+'" r="6" fill="var(--ac)"/></svg><div class="ax"><span>Session 1</span><span>Session '+vals.length+'</span></div>'}
+function sampleBanner(){return S.seeded?'<div class="card" style="border-color:var(--ac);margin-bottom:12px"><div class="between"><span style="font-size:14px;font-weight:600">Showing two weeks of sample data</span><button class="btn txt" style="width:auto;padding:0" data-act="seedOff">Back to mine</button></div></div>':'<button class="card" style="width:100%;text-align:left;margin-bottom:12px" data-act="seedOn"><div class="between"><span style="font-size:14px;font-weight:600">See an example after two weeks of practice</span>'+ic('chev',18)+'</div></button>'}
+R.progress=function(){var v=visible(),n=streak(),fill=v.map(function(s){return +rate(s)}),pace=v.map(wpm),themes={};
+ v.forEach(function(s){themes[s.theme]=(themes[s.theme]||0)+1});var tl=Object.keys(themes).sort(function(a,b){return themes[b]-themes[a]}).slice(0,3),tmax=themes[tl[0]]||1;
+ var cmp='';
+ ORDER.forEach(function(id){var at=attsOf(id);if(at.length>1){var a=at[0],b=at[at.length-1],c=CH[id];cmp+='<div class="card" style="'+(cmp?'margin-top:10px':'')+'"><div class="between"><b>'+c.title+'</b><span class="chip">Today</span></div><div class="dl2" style="margin-top:10px"><span>Fillers</span><s>'+a.fillers+'</s><span>→</span><b>'+b.fillers+'</b></div><p>'+c.cmp.prog+'</p></div>'}});
+ if(S.seeded)cmp+='<div class="card" style="'+(cmp?'margin-top:10px':'')+'"><div class="between"><b>Describe a deadline you almost missed</b><span class="chip">Oct 7</span></div><div class="dl2" style="margin-top:10px"><span>Fillers</span><s>9</s><span>→</span><b>6</b></div><p>The result now comes in the first sentence.</p></div>';
+ var k=fill.length,hl=k>=3&&fill[k-1]<fill[0]?'Fewer fillers than in your <em>first</em> session.':k>=2?'Your practice, <em>at a glance</em>.':'Your first sessions are <em>saved</em>.';
+ return page('tabs','<div class="top"><span>Progress</span>'+profBtn()+'</div><h1 style="margin:12px 0 16px">'+hl+'</h1>'+sampleBanner()+'<div class="mt" style="margin-top:6px"><div class="m"><b>'+v.length+'</b><span>Sessions</span></div><div class="m"><b>'+totalTime(v)+'</b><span>Speaking time</span></div><div class="m"><b>'+(n||'–')+'</b><span>Day streak</span></div></div><h2>Delivery trends</h2><div class="card"><div class="between"><b>Fillers per 100 words</b><span class="chip">'+(k?fill[k-1]:'–')+' now</span></div>'+spark(fill,{label:'Fillers per 100 words by session, '+fill.join(', ')})+'</div><div class="card" style="margin-top:10px"><div class="between"><b>Speaking pace</b><span class="chip">'+(k?pace[k-1]:'–')+' wpm</span></div>'+spark(pace,{label:'Words per minute by session, '+pace.join(', ')})+'<p class="note" style="margin-top:6px">Your pace in each session, for reference. There is no single right speed: it changes with the task and the audience.</p></div><h2>What we keep coaching</h2><div class="card">'+(tl.length?tl.map(function(t,i){return '<div style="'+(i?'margin-top:14px':'')+'"><div class="between"><span style="font-weight:600">'+t+'</span><span class="chip">'+themes[t]+'×</span></div><div class="bar"><i style="width:'+(themes[t]/tmax*100)+'%"></i></div></div>'}).join(''):'<p style="margin:0">Themes appear after your first coaching session.</p>')+'</div>'+(cmp?'<h2>Recent comparisons</h2>'+cmp:''))};
+
+R.history=function(){var v=visible().slice().reverse(),groups={};v.forEach(function(s){var k=s.when==='Today'?'Today':'Earlier';(groups[k]=groups[k]||[]).push(s)});
+ return page('',hdr({right:profBtn()})+'<h1 style="font-size:34px">History</h1>'+sampleBanner().replace('margin-bottom:12px','margin:12px 0')+(v.length?['Today','Earlier'].filter(function(k){return groups[k]}).map(function(k){return '<h2>'+k+'</h2><div class="card" style="padding:4px 16px"><div class="list">'+groups[k].map(histRow).join('')+'</div></div>'}).join(''):'<p class="sub">No sessions yet.</p>'))};
+R.histDetail=function(c){var s=sessions().filter(function(x){return x.id===c.id})[0];if(!s)return R.history();var has=S.recs.has(s.id),imp=s.improve,went=s.went,cc=s.ch?CH[s.ch]:null;
+ var coach=s.t?(s.kind==='baseline'?'<div class="card"><h3>You name skills but never show one</h3><p>One short story about something you built would make your intro memorable.</p></div>':s.n===1?'<div class="card"><h3>'+cc.fb.pri+'</h3><p>'+cc.fb.priBody.replace('{n}',(exc(s.t).match(/<j>/g)||[]).length)+'</p></div>':'<div class="card"><h3>'+cc.cmp.head.replace(/<[^>]+>/g,'')+'</h3><p>Next focus: '+cc.cmp.next+'</p></div>'):'<div class="card"><h3>'+s.theme+'</h3><p><b style="color:var(--tx)">Went well:</b> '+went+'</p><p><b style="color:var(--tx)">Next time:</b> '+imp+'</p></div>';
+ return page('',hdr({})+'<p class="eyebrow">'+s.cat+' · '+s.when+(s.n?' · attempt '+s.n:'')+'</p><h1 style="font-size:34px">'+s.title+'</h1><h2>Delivery</h2>'+mtiles(s)+'<h2>Coaching</h2>'+coach+'<h2>Transcript</h2><div class="card">'+(s.t?'<div class="trans">'+rt(s.t)+'</div>':'<div class="trans">'+s.excerpt+'</div><p class="note">Excerpt shown in the demo.</p>')+'</div><h2>Recording</h2><div class="card">'+(has?'<div class="between"><span>Saved privately</span><span class="chip good">Private</span></div>'+playBar():'<p style="margin:0">The raw recording was deleted after processing, as you chose. Results are kept.</p>')+'</div>','<button class="btn danger" data-act="delAsk" data-id="'+s.id+'">Delete this session</button>')};
+
+/* ---------- profile / settings ---------- */
+R.profile=function(){var th=theme();return page('',hdr({})+'<h1 style="font-size:34px">Profile</h1><div class="card" style="margin-top:16px"><div class="between"><div><h3>'+(S.account?'Signed in':'Guest')+'</h3><p style="margin:4px 0 0">'+(S.account?'Your history syncs across devices.':'Your history lives on this phone only.')+'</p></div>'+(S.account?'<span class="chip good">Synced</span>':'')+'</div>'+(S.account?'':'<button class="btn primary" style="margin-top:14px;height:50px" data-act="go" data-to="account">Keep your progress</button>')+'</div><h2>Practice</h2><div class="card"><b style="font-size:15px">Goals</b><div class="row" style="margin-top:10px">'+GOALS.map(function(g){return '<button class="chip'+(S.goals.indexOf(g[0])>-1?' ac':'')+'" style="border:0" data-act="goalToggle" data-v="'+g[0]+'" aria-pressed="'+(S.goals.indexOf(g[0])>-1)+'">'+g[1].replace('Presentations and everyday speaking','Everyday speaking')+'</button>'}).join('')+'</div><p class="note">Changing goals never deletes your progress.</p><b style="font-size:15px;display:block;margin:16px 0 8px">Default length</b>'+seg('durSet',[[2,'2 min'],[5,'5 min'],[10,'10 min']],S.duration)+'<b style="font-size:15px;display:block;margin:16px 0 8px">Record as</b>'+seg('modeSet',[['video','Video'],['voice','Voice only']],S.mode)+'</div><h2>Preferences</h2><div class="card" style="padding:4px 16px"><div class="list"><button class="li" data-act="go" data-to="reminders"><span class="t"><b>Daily reminder</b><small>'+(S.remind.on?'On at '+S.remind.time:'Off')+'</small></span><span class="r">'+ic('chev',16)+'</span></button><div class="li" style="cursor:default"><span class="t"><b>Appearance</b></span><div style="width:170px">'+seg('themeSet',[['dark','Dark'],['light','Light']],th)+'</div></div></div></div><h2>Privacy and help</h2><div class="card" style="padding:4px 16px"><div class="list"><button class="li" data-act="go" data-to="privacy"><span class="t"><b>Privacy and data</b><small>See what is stored and delete it</small></span><span class="r">'+ic('chev',16)+'</span></button><button class="li" data-act="help"><span class="t"><b>Help</b></span><span class="r">'+ic('chev',16)+'</span></button></div></div><button class="btn danger" style="margin-top:22px" data-act="delAcctAsk">Delete account and data</button><button class="btn txt" style="margin-top:6px;margin-bottom:24px" data-act="restart">Restart demo</button>')};
+
+R.privacy=function(){var v=visible(),rc=Array.from(S.recs).filter(function(i){return v.some(function(s){return s.id===i})}).length;
+ return page('',hdr({})+'<h1 style="font-size:34px">Privacy and data</h1><p class="sub">Here is what Speak5 keeps, how your answers are processed, and how to remove it.</p><h2>What is stored</h2><div class="card" style="padding:4px 16px"><div class="list">'+[['Preferences','Goals, length, mode',S.account?'Synced':'This phone'],['Sessions',v.length+' with transcripts and coaching',S.account?'Synced':'This phone'],['Saved recordings',rc?rc+' saved, stored privately':'None saved',rc?'Private':'–'],['Coaching profile','Patterns used to pick challenges',S.account?'Synced':'This phone']].map(function(r){return '<div class="li" style="cursor:default"><span class="t"><b>'+r[0]+'</b><small>'+r[1]+'</small></span><span class="chip">'+r[2]+'</span></div>'}).join('')+'</div></div><h2>How your answers are processed</h2><div class="card"><div class="dl" style="margin-top:0"><div class="d"><span class="dot">'+ic('mic',16)+'</span><span><b>Transcript.</b> Your audio may be processed by a speech-to-text service to create the transcript.</span></div><div class="d"><span class="dot">'+ic('spark',16)+'</span><span><b>Coaching.</b> Your transcript, and a short summary of your past practice, may be sent to an AI service to write your feedback. Your video is not used for coaching.</span></div><div class="d"><span class="dot">'+ic('shield',16)+'</span><span><b>Recordings.</b> Raw video and audio are deleted after processing unless you save them. Saved recordings are stored privately, with no public link.</span></div></div><p class="note">Prototype: before launch, this screen will name each service and how long it may keep data.</p></div><h2>Your controls</h2><div class="card" style="padding:4px 16px"><div class="list"><button class="li" data-act="go" data-to="history"><span class="t"><b>Delete a session</b><small>Open a session and tap Delete</small></span><span class="r">'+ic('chev',16)+'</span></button><button class="li" data-act="delRecsAsk"><span class="t"><b>Delete saved recordings</b><small>Keeps transcripts and results</small></span><span class="r">'+ic('trash',18)+'</span></button></div></div><p class="note">Deleting a session also removes its contribution to your trends and coaching profile.</p><button class="btn danger" style="margin-top:20px;margin-bottom:24px" data-act="delAcctAsk">Delete account and data</button>')};
+
+R.account=function(c){return page('',hdr({})+'<h1 style="font-size:34px">Keep your progress</h1><p class="sub">Create an account to sync across devices. Your guest data moves over with you.</p><button class="btn white" style="margin-top:20px;border:1px solid var(--ln)" data-act="acctGoogle">Continue with Google</button><p class="hint" style="margin:16px 0 0">or use email</p><form id="af" novalidate><label class="lbl" for="em">Email</label><input class="input" id="em" type="email" autocomplete="email" placeholder="you@example.com"><label class="lbl" for="pw">Password</label><input class="input" id="pw" type="password" autocomplete="new-password" placeholder="At least 8 characters"><p class="err" id="aerr" role="alert"></p><p class="note">We will send a verification email. You can reset your password any time.</p></form>','<button class="btn primary" data-act="acctEmail">Create account</button>')};
+R.migrated=function(){var v=visible(),rc=Array.from(S.recs).length;return page('',hdr({back:false})+'<div class="center">'+ic('check',40)+'</div><h1>Your progress is <em>safe</em></h1><p class="sub">Account created. This is what moved over from this phone:</p><div class="dl" style="margin-top:16px">'+['Preferences and goals','Baseline result',v.length+' sessions with transcripts','Metrics, feedback and coaching profile',(rc?rc+' saved recording'+(rc>1?'s':''):'No saved recordings to move')].map(function(t){return '<div class="d"><span class="dot">'+ic('check',16)+'</span><span style="padding-top:4px">'+t+'</span></div>'}).join('')+'</div><p class="note">In the real app, you would verify your email first. History now syncs across devices.</p>','<button class="btn primary" data-act="tab" data-to="home">Continue</button>')};
+R.reminders=function(){var on=S.remind.on;return page('',hdr({})+'<h1 style="font-size:34px">Daily reminder</h1><p class="sub">A gentle nudge, at a time you choose. Turn it off whenever you like.</p><div class="card" style="margin-top:20px"><div class="between"><b>Remind me to practise</b><button class="tgl" data-act="remindTgl" aria-pressed="'+on+'" aria-label="Daily reminder"></button></div></div>'+(on?'<h2>Time</h2><div class="row">'+['7:30 AM','1:00 PM','8:00 PM'].map(function(t){return '<button class="chip'+(S.remind.time===t?' ac':'')+'" style="border:0;padding:10px 16px;font-size:15px" data-act="remindTime" data-v="'+t+'" aria-pressed="'+(S.remind.time===t)+'">'+t+'</button>'}).join('')+'</div><h2>Preview</h2><div class="card"><b>Speak5</b><p>Ready for a 5-minute answer? No pressure.</p></div>':'<p class="note">Android asks to allow notifications when you turn this on.</p>'),'<button class="btn primary" data-act="back">Done</button>')};
+
+/* ---------- actions ---------- */
+function ensureDur(){S.durPicked=S.durPicked||false}
+A.back=function(){back()};
+A.go=function(d){if(d.id&&CH[d.id])S.chal=d.id;go(d.to,{id:d.id,k:d.k})};
+A.tab=function(d){root(d.to)};
+A.goalToggle=function(d){var i=S.goals.indexOf(d.v);if(i>-1)S.goals.splice(i,1);else S.goals.push(d.v);if(cur==='profile'&&!S.goals.length){S.goals.push(d.v);toast('Keep at least one goal');}if(!S.attempts.some(function(a){return a.ch===S.today}))S.today=null;redraw()};
+A.goalsNext=function(){go('comfort')};
+A.comfortSet=function(d){S.comfort=d.v;redraw()};
+A.comfortNext=function(){go('duration')};
+A.durSet=function(d){S.duration=+d.v;S.durPicked=true;redraw()};
+A.durNext=function(){go('bIntro')};
+A.bStart=function(){go('access')};
+A.modeSet=function(d){S.mode=d.v;redraw()};
+A.accessGo=function(){askPerm(function(ok){if(ok)go('rec',{k:'base'},{replace:true});else go('access',{err:true},{replace:true})})};
+function askPerm(done){function mic(){dlg('mic','Allow Speak5 to record audio?','Prototype: simulated Android prompt',[['While using the app',function(){closeDlg();done(true)}],['Only this time',function(){closeDlg();done(true)}],['Don’t allow',function(){closeDlg();done(false)}]])}
+ if(S.mode==='video')dlg('video','Allow Speak5 to take pictures and record video?','Prototype: simulated Android prompt',[['While using the app',function(){closeDlg();setTimeout(mic,250)}],['Only this time',function(){closeDlg();setTimeout(mic,250)}],['Don’t allow',function(){closeDlg();S.mode='voice';toast('Camera is off. Continuing voice only.');setTimeout(mic,350)}]]);else mic()}
+A.dlgBtn=function(d){var f=DLGF[+d.i];if(f)f()};
+A.closeSheet=function(){closeSheet()};
+A.recFinish=function(){go('recDone',{k:ctx.k,el:REC.el},{replace:true})};
+A.recDiscard=function(){sheet('<h2>Discard this take?</h2><p>Nothing is saved. You can record again.</p><button class="btn primary" data-act="closeSheet">Keep recording</button><button class="btn ghost" data-act="discardYes" data-k="'+ctx.k+'">Discard</button>')};
+A.discardYes=function(d){closeSheet();A.redo(d)};
+A.redo=function(d){S.keepNow=false;if(d.k==='base')go('bIntro',{},{replace:true});else go('retry',{},{replace:true})};
+A.keepSet=function(d){S.keepNow=d.v==='yes';redraw()};
+A.analyse=function(d){go('proc',{k:d.k},{replace:true})};
+A.bDone=function(){if(!S.prompted){S.prompted=true;go('keep',{},{replace:true})}else root('home')};
+A.later=function(){root('home')};
+A.prepGo=function(){go('rec',{k:'att'},{replace:true})};
+A.retryGo=function(){go('rec',{k:'att'},{replace:true})};
+A.open=function(d){go('histDetail',{id:d.id})};
+A.seedOn=function(){setSeeded(true);redraw()};
+A.seedOff=function(){setSeeded(false);redraw()};
+A.togglePlay=function(){S.playing=!S.playing;redraw()};
+A.themeSet=function(d){document.documentElement.dataset.theme=d.v;redraw()};
+A.help=function(){sheet('<h2>Help</h2><p><b style="color:var(--tx)">Why no pause button?</b> Real conversations do not pause, so recording does not either. You can finish early or discard.</p><p><b style="color:var(--tx)">Is there a score?</b> No. You see evidence from your own answer and numbers you can check.</p><p><b style="color:var(--tx)">Who can access my recordings?</b> Your recording is not shared with other users and has no public link. By default it is deleted after processing. If you save it, it is stored privately and you can delete it any time.</p><p><b style="color:var(--tx)">What is processed by other services?</b> To create your transcript, audio may be processed by a speech-to-text service. Your transcript may then be sent to an AI service to write your coaching. Your video is not used for coaching. Privacy and data lists what is stored.</p><button class="btn primary" data-act="closeSheet">Got it</button>')};
+A.delAsk=function(d){sheet('<h2>Delete this session?</h2><p>The transcript, coaching, metrics and any saved recording are removed. Your trends and coaching profile update without it.</p><button class="btn danger" data-act="delYes" data-id="'+d.id+'">Delete session</button><button class="btn ghost" data-act="closeSheet">Cancel</button>')};
+A.delYes=function(d){S.del.add(d.id);S.recs.delete(d.id);closeSheet();back();toast('Session deleted')};
+A.delRecsAsk=function(){sheet('<h2>Delete saved recordings?</h2><p>Videos and audio are removed for good. Transcripts and results stay.</p><button class="btn danger" data-act="delRecsYes">Delete recordings</button><button class="btn ghost" data-act="closeSheet">Cancel</button>')};
+A.delRecsYes=function(){S.recs.clear();closeSheet();redraw();toast('Recordings deleted')};
+A.delAcctAsk=function(){sheet('<h2>Delete account and data?</h2><p>This removes your profile, history, transcripts, coaching profile and saved recordings. Some backups can take a short while to clear.</p><button class="btn danger" data-act="delAcctYes">Delete everything</button><button class="btn ghost" data-act="closeSheet">Cancel</button>')};
+A.delAcctYes=function(){closeSheet();A.restart();toast('Account and data deleted')};
+A.restart=function(){S=fresh();document.documentElement.dataset.theme='light';root('splash')};
+A.acctGoogle=function(){S.account=true;go('migrated',{},{replace:true})};
+A.acctEmail=function(){var e=$('#em').value.trim(),p=$('#pw').value,er=$('#aerr');if(!/^\S+@\S+\.\S+$/.test(e)){er.textContent='Enter a valid email address.';return}if(p.length<8){er.textContent='Use at least 8 characters for your password.';return}S.account=true;go('migrated',{},{replace:true})};
+A.remindTgl=function(){if(S.remind.on){S.remind.on=false;redraw();return}dlg('bell','Allow Speak5 to send you notifications?','Prototype: simulated Android prompt',[['Allow',function(){closeDlg();S.remind.on=true;redraw()}],['Don’t allow',function(){closeDlg();toast('Reminders stay off')}]])};
+A.remindTime=function(d){S.remind.time=d.v;redraw()};
+
+document.addEventListener('click',function(e){
+ var sc=e.target.closest('#sheet .scrim');if(sc){closeSheet();return}
+ var b=e.target.closest('[data-act]');if(!b||b.disabled)return;var f=A[b.dataset.act];if(f)f(b.dataset,b)});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeSheet()}});
+
+/* ---------- jump panel ---------- */
+function setup(l,goal){S=fresh();if(l==='fresh')return;S.goals=goal?[goal]:['tech','interview'];S.comfort='ok';S.duration=5;S.durPicked=true;if(l==='onb')return;S.base=true;S.prompted=true;if(l==='base')return;var id=recommend();S.today=id;S.chal=id;S.attempts.push(mkAtt(1,id));if(l==='a1')return;S.attempts.push(mkAtt(2,id))}
+var J=[['Personalisation (Home for each goal)',[['Interview answers','home','base:interview'],['Group discussions','home','base:gd'],['Technical explanations','home','base:tech'],['Everyday speaking','home','base:general'],['Interview + technical','home','base']]],
+ ['First use',[['Splash','splash','fresh'],['Goals','goals','fresh'],['Comfort','comfort','fresh'],['Duration','duration','fresh'],['Baseline intro','bIntro','onb'],['Camera and mic','access','onb'],['Baseline recording','rec:base','onb'],['Baseline result','bResult','base0'],['Keep progress','keep','base0']]],
+ ['Practice loop',[['Home','home','base'],['Practice tab','practice','base'],['Challenge','challenge','base'],['Method','framework','base'],['Prepare','prep','base'],['Recording','rec:att','base'],['Take complete','recDone:att','base'],['Processing','proc:att','base'],['Feedback','feedback','a1'],['Coaching','coaching','a1'],['Retry','retry','a1'],['Compare','compare','a2']]],
+ ['Everything else',[['Progress','progress','a2s'],['History','history','a2s'],['Settings','profile','base'],['Privacy and data','privacy','a2s'],['Account','account','base'],['Reminders','reminders','base'],['Processing error','error','onb']]]];
+function jump(name,lvl){closeSheet();closeDlg();var lp=lvl.split(':'),lv=lp[0],goal=lp[1],l=lv==='base0'?'base':lv==='a2s'?'a2':lv;setup(l,goal);if(lv==='a2s')setSeeded(true);var p=name.split(':'),n=p[0],k=p[1];
+ var c={};if(n==='rec'){c={k:k}}else if(n==='challenge'){c={id:k||curId()};S.chal=c.id}else if(n==='recDone'){c={k:k,el:75}}else if(n==='proc'){c={k:k}}
+ go(n,c,{root:true,dir:'none'})}
+(function(){var h='';J.forEach(function(g){h+='<h3>'+g[0]+'</h3><div class="jl">'+g[1].map(function(x){return '<button data-jn="'+x[1]+'" data-jl="'+x[2]+'">'+x[0]+'</button>'}).join('')+'</div>'});$('#jumps').innerHTML=h;
+ $('#side').addEventListener('click',function(e){var b=e.target.closest('[data-jn]');if(b)jump(b.dataset.jn,b.dataset.jl)});
+ $('#restart').addEventListener('click',function(){A.restart()})})();
+
+/* Cadence is light by default; Appearance in Settings switches to dark */
+if(!document.documentElement.dataset.theme)document.documentElement.dataset.theme='light';
+go('splash',{},{root:true,dir:'none'});
+})();
+</script>
+
+</body></html>
